@@ -1,1 +1,1 @@
-# material-scanner
+# Material Scanner
