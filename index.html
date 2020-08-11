@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Material Scanner Test</title>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link rel="stylesheet" href="style.css" type="text/css" media="all" />
+   </head>
+
+   <body>
+      <div id="input-drop-area">
+         <div class="center">
+            <h1>Drop your images here.</h1>
+            <p>The images should be named:</p>
+            <p id="image-names">
+               Loading...<br />
+               (Make sure JavaScript is enabled in your browser.)
+            </p>
+         </div>
+      </div>
+      <div id="loading-area">
+         <div id="c-log"></div>
+         <div class="lds-dual-ring center"></div>
+      </div>
+      <div id="output-area">
+         <div id="normal-map">
+            <button id="normal-map-button">download normal map</button>
+         </div>
+         <div id="point-cloud">
+            <button id="point-cloud-button">download point cloud</button>
+         </div>
+      </div>
+      <script src="image-calc.js"></script>
+      <script src="dataset.js"></script>
+      <script src="point-cloud.js"></script>
+      <script src="normal-map.js"></script>
+      <script src="script.js"></script>
+   </body>
+</html>
