@@ -1,7 +1,5 @@
 "use strict";
 
-const POINT_CLOUD_QUALITY_PERCENT = 10;
-
 class PointCloud {
    constructor(normalMap, dimensions, depthFactor, colorPixelArray) {
       this.normalMap = normalMap;
@@ -155,21 +153,21 @@ class PointCloud {
 
    getFrontalDegreeFromSphericalDegree(sphericalDegree) {
       switch (sphericalDegree) {
-         case TOP:
+         case NORTH:
             return 0;
-         case BOTTOM:
+         case SOUTH:
             return 180;
-         case TOP_RIGHT:
+         case NORTH_EAST:
             return 45;
-         case BOTTOM_LEFT:
+         case SOUTH_WEST:
             return 225;
-         case LEFT:
+         case WEST:
             return 270;
-         case RIGHT:
+         case EAST:
             return 90;
-         case BOTTOM_RIGHT:
+         case SOUTH_EAST:
             return 135;
-         case TOP_LEFT:
+         case NORTH_WEST:
             return 315;
          default:
             console.warn("Spherical degree not known!");

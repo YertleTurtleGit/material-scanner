@@ -1,6 +1,5 @@
 "use strict";
 
-const CHANNEL_ARRAY = ["r", "g", "b", "a"];
 class ImageCalc {
    constructor(onlyLuminance = false) {
       cLog("Generating shader source.");
@@ -79,7 +78,7 @@ class ImageCalc {
 
 class ImageShaderConstructor {
    constructor(onlyLuminance) {
-      this.floatPrecision = "highp";
+      this.floatPrecision = GPU_GL_FLOAT_PRECISION;
       this.inputPosCoordinate = "inputPosCoordinate";
       this.inputTexCoordinate = "inputTexCoordinate";
       this.tmpFragColor = "tmpFragColor";
@@ -270,7 +269,7 @@ class ImageShaderConstructor {
       this.glContext.clear(
          this.glContext.COLOR_BUFFER_BIT | this.glContext.DEPTH_BUFFER_BIT
       );
-      cLog("Loading images for GPU.");
+      cLog("Loading images for gpu.");
       for (
          var i = 0;
          i < this.shaderVariableCollection.getShaderImages().length;
@@ -671,7 +670,7 @@ class ShaderVariable {
 
    getShaderStringOfChannel(channel) {
       if (this.isImage() || this.isString()) {
-         return this.getShaderString() + "." + CHANNEL_ARRAY[channel];
+         return this.getShaderString() + "." + COLOR_CHANNELS[channel];
       } else {
          return this.getShaderString();
       }

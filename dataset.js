@@ -9,7 +9,7 @@ class Dataset {
       this.droppedFiles = null;
 
       this.jsImageObjects = new Array(sphericalCoordinates.length).fill(null);
-      this.jsImageObjectNames = new Array(sphericalCoordinates.length).fill(
+      this.jsImageObjectDegrees = new Array(sphericalCoordinates.length).fill(
          null
       );
 
@@ -40,18 +40,32 @@ class Dataset {
       LOADING_AREA.style.display = "block";
    }
 
+   getObjectName() {
+      var objectName = [];
+      const split = this.droppedFiles[0].name.split(".")[0].split("_");
+      for (var i = 1; i < split.length; i++) {
+         objectName.push(split[i]);
+      }
+      console.log(objectName.join("_"));
+      return objectName.join("_");
+   }
+
    loadAllImages() {
-      cLog("Loading " + this.droppedFiles.length + " images for CPU.");
+      cLog("Loading " + this.droppedFiles.length + " images for cpu.");
 
       for (var i = 0; i < this.droppedFiles.length; i++) {
          const fileName = this.droppedFiles[i].name.split(".")[0];
+         const imageDegree = fileName.split("_", 1)[0];
          const fileType = this.droppedFiles[i].type;
 
-         if (IMAGE_NAMES.includes(fileName) && fileType.startsWith("image")) {
+         if (
+            IMAGE_NAMES.includes(imageDegree) &&
+            fileType.startsWith("image")
+         ) {
             var reader = new FileReader();
             reader.addEventListener(
                "load",
-               this.readerLoaded.bind(this, reader, i, fileName)
+               this.readerLoaded.bind(this, reader, i, imageDegree)
             );
             reader.readAsDataURL(this.droppedFiles[i]);
          } else {
@@ -60,19 +74,19 @@ class Dataset {
       }
    }
 
-   readerLoaded(reader, index, imageName, ev) {
+   readerLoaded(reader, index, imageDegree, ev) {
       reader.removeEventListener("load", this.readerLoaded);
       var image = new Image();
       image.addEventListener(
          "load",
-         this.imageLoaded.bind(this, image, imageName)
+         this.imageLoaded.bind(this, image, imageDegree)
       );
       this.jsImageObjects[index] = image;
-      this.jsImageObjectNames[index] = imageName;
+      this.jsImageObjectDegrees[index] = imageDegree;
       image.src = ev.target.result;
    }
 
-   imageLoaded(image, imageName) {
+   imageLoaded(image, imageDegree) {
       this.imagesLoaded++;
       image.removeEventListener("load", this.imageLoaded);
       if (this.imagesLoaded == this.jsImageObjects.length) {
@@ -81,15 +95,15 @@ class Dataset {
    }
 
    getImage(sphericalCoordinate) {
-      var imageName = null;
+      var imageDegree = null;
       for (var i = 0; i < LIGHTING_DEGREES.length; i++) {
          if (sphericalCoordinate == LIGHTING_DEGREES[i]) {
-            imageName = IMAGE_NAMES[i];
+            imageDegree = parseInt(IMAGE_NAMES[i]);
          }
       }
 
       for (var i = 0; i < this.jsImageObjects.length; i++) {
-         if (this.jsImageObjectNames[i] == imageName) {
+         if (this.jsImageObjectDegrees[i] == imageDegree) {
             return this.jsImageObjects[i];
          }
       }

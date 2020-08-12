@@ -14,10 +14,11 @@ class NormalMap {
       setTimeout(onloadCallback, 0);
    }
 
-   downloadAsImage() {
+   downloadAsImage(fileName) {
+      fileName += ".png";
       var element = document.createElement("a");
       element.setAttribute("href", this.getAsDataUrl());
-      element.setAttribute("download", "normal-map.png");
+      element.setAttribute("download", fileName);
 
       element.style.display = "none";
       document.body.appendChild(element);
@@ -71,14 +72,14 @@ class NormalMap {
       const all = maxImage;
       const front = ic.multiply(ic.divide(minImage, all), 2);
 
-      const north = ic.divide(this.dataset.getImage(TOP), all);
-      const northeast = ic.divide(this.dataset.getImage(TOP_RIGHT), all);
-      const east = ic.divide(this.dataset.getImage(RIGHT), all);
-      const southeast = ic.divide(this.dataset.getImage(BOTTOM_RIGHT), all);
-      const south = ic.divide(this.dataset.getImage(BOTTOM), all);
-      const southwest = ic.divide(this.dataset.getImage(BOTTOM_LEFT), all);
-      const west = ic.divide(this.dataset.getImage(LEFT), all);
-      const northwest = ic.divide(this.dataset.getImage(TOP_LEFT), all);
+      const north = ic.divide(this.dataset.getImage(NORTH), all);
+      const northeast = ic.divide(this.dataset.getImage(NORTH_EAST), all);
+      const east = ic.divide(this.dataset.getImage(EAST), all);
+      const southeast = ic.divide(this.dataset.getImage(SOUTH_EAST), all);
+      const south = ic.divide(this.dataset.getImage(SOUTH), all);
+      const southwest = ic.divide(this.dataset.getImage(SOUTH_WEST), all);
+      const west = ic.divide(this.dataset.getImage(WEST), all);
+      const northwest = ic.divide(this.dataset.getImage(NORTH_WEST), all);
 
       const red = ic.add(
          ic.multiply(1 / 4, ic.divide(east, west)),
