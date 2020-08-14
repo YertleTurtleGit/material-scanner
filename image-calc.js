@@ -30,6 +30,10 @@ class ImageCalc {
       return this.calculate(comparable1, comparable2, "min");
    }
 
+   getChannel(image, channelChar) {
+      return this.calculate(image, channelChar, ".");
+   }
+
    sieve(image1, factor1, conditionOperator, image2, factor2) {
       return this.imageShaderConstructor.addSieve(
          image1,
@@ -298,6 +302,8 @@ class ImageShaderConstructor {
       }
    }
 
+   addFloat;
+
    addCalculation(operant1, operant2, operator) {
       var calculation = new ShaderCalculation(
          operant1,
@@ -310,7 +316,7 @@ class ImageShaderConstructor {
       return calculation.getResult();
    }
 
-   addSieve(image1, factor1, conditionOperator, image2, factor2) {
+   /*addSieve(image1, factor1, conditionOperator, image2, factor2) {
       var sieve = new ShaderSieve(
          image1,
          factor1,
@@ -322,7 +328,7 @@ class ImageShaderConstructor {
       );
       this.sieves.push(sieve);
       return sieve.getResult();
-   }
+   }*/
 
    getVertexShaderSource() {
       return [
@@ -345,7 +351,7 @@ class ImageShaderConstructor {
       fragmentShaderSource.push(this.getPreFragmentShaderSource());
       fragmentShaderSource.push(this.getUniformDeclarationsSource());
       fragmentShaderSource.push(this.getVoidMainFunction());
-      //console.log(fragmentShaderSource.join("\n"));
+      console.log(fragmentShaderSource.join("\n"));
       return fragmentShaderSource.join("\n");
    }
 
@@ -501,29 +507,50 @@ class ShaderCalculation {
       shaderVariableCollection,
       glContext
    ) {
-      this.operant1 = new ShaderVariable(
-         operant1,
-         shaderVariableCollection,
-         glContext
-      );
-      this.operant2 = new ShaderVariable(
-         operant2,
-         shaderVariableCollection,
-         glContext
-      );
+      this.operant1 = this.cast(operant1, shaderVariableCollection, glContext);
+      this.operant2 = this.cast(operant2, shaderVariableCollection, glContext);
       this.operator = operator;
-      this.result = UniqueVariable.getName("color");
+      this.result = new ShaderVariable(
+         null,
+         shaderVariableCollection,
+         glContext,
+         this.getResultType()
+      );
+   }
+
+   cast(castFrom, shaderVariableCollection, glContext) {
+      if (castFrom instanceof ShaderVariable) {
+         return castFrom;
+      } else {
+         return new ShaderVariable(
+            castFrom,
+            shaderVariableCollection,
+            glContext
+         );
+      }
    }
 
    getResult() {
       return this.result;
    }
 
+   getResultType() {
+      if (this.operator === ".") {
+         return "float";
+      }
+      if (this.operant1.isImage() || this.operant2.isImage()) {
+         return "vec4";
+      } else if (this.operant1.isFloat() && this.operant2.isFloat()) {
+         return "float";
+      }
+   }
+
    getShaderString() {
       if (this.operator == "max" || this.operator == "min") {
          return (
-            "vec4 " +
-            this.result +
+            this.getResultType() +
+            " " +
+            this.result.getShaderString() +
             " = " +
             this.operator +
             "(" +
@@ -532,10 +559,21 @@ class ShaderCalculation {
             this.operant2.getShaderString() +
             ");"
          );
+      } else if (this.operator == ".") {
+         return (
+            "float " +
+            this.result.getShaderString() +
+            " = " +
+            this.operant1.getShaderString() +
+            this.operator +
+            this.operant2.getShaderString() +
+            ";"
+         );
       } else {
          return (
-            "vec4 " +
-            this.result +
+            this.getResultType() +
+            " " +
+            this.result.getShaderString() +
             " = " +
             this.operant1.getShaderString() +
             " " +
@@ -548,7 +586,7 @@ class ShaderCalculation {
    }
 }
 
-class ShaderSieve {
+/*class ShaderSieve {
    constructor(
       compare1,
       factor1,
@@ -596,7 +634,7 @@ class ShaderSieve {
          "}",
       ].join("\n");
    }
-}
+}*/
 
 class ShaderVariableCollection {
    constructor() {
@@ -613,63 +651,127 @@ class ShaderVariableCollection {
 }
 
 class ShaderVariable {
-   constructor(value, collection, glContext) {
-      this.value = value;
-      this.glContext = glContext;
+   constructor(value, collection, glContext, manuallySetType = null) {
+      if (!this.cast(value)) {
+         this.value = value;
+         this.collection = collection;
+         this.manuallySetType = manuallySetType;
+         this.glContext = glContext;
+         this.shaderString = null;
+         this.shaderImage = null;
 
-      this.shaderString = null;
-      this.shaderImage = null;
-
-      if (this.isImage()) {
-         for (var i = 0; i < collection.getShaderImages().length; i++) {
-            if (
-               collection.getShaderImages()[i].getJsImageObject() == this.value
-            ) {
-               this.shaderImage = collection.getShaderImages()[i];
-            }
+         if (this.value == null && this.manuallySetType == null) {
+            console.error(
+               "If shader variable value is not provided, manually type has to be set."
+            );
          }
-         if (this.shaderImage == null) {
-            this.shaderImage = new ShaderImage(this.value, this.glContext);
-            collection.addShaderImage(this.shaderImage);
+         if (this.value != null && this.manuallySetType != null) {
+            console.warn(
+               "If shader variable value is provided, manually type should not be set."
+            );
+            this.manuallySetType = null;
+         }
+         if (this.value == null) {
+            this.value = UniqueVariable.getName("var_" + manuallySetType);
+         }
+
+         if (this.isImageWithData()) {
+            this.setAsShaderImage();
          }
       }
    }
 
+   cast(castFrom) {
+      if (castFrom instanceof ShaderVariable) {
+         this.value = castFrom.value;
+         this.collection = castFrom.collection;
+         this.manuallySetType = castFrom.manuallySetType;
+         this.glContext = castFrom.glContext;
+         this.shaderString = castFrom.shaderString;
+         this.shaderImage = castFrom.shaderImage;
+         return true;
+      }
+      return false;
+   }
+
+   setAsShaderImage() {
+      for (var i = 0; i < this.collection.getShaderImages().length; i++) {
+         if (
+            this.collection.getShaderImages()[i].getJsImageObject() ==
+            this.value
+         ) {
+            this.shaderImage = this.collection.getShaderImages()[i];
+         }
+      }
+      if (this.shaderImage == null) {
+         this.shaderImage = new ShaderImage(this.value, this.glContext);
+         this.collection.addShaderImage(this.shaderImage);
+      }
+   }
+
+   isStringWithData() {
+      return this.value instanceof String || typeof this.value === "string";
+   }
+
    isImage() {
+      return (
+         this.value instanceof HTMLImageElement ||
+         this.manuallySetType == "vec4"
+      );
+   }
+
+   isFloat() {
+      return (
+         !isNaN(this.value) ||
+         typeof this.value == "number" ||
+         this.manuallySetType == "float"
+      );
+   }
+
+   isImageWithData() {
       return this.value instanceof HTMLImageElement;
    }
 
-   isNumeric() {
+   isFloatWithData() {
       return !isNaN(this.value) || typeof this.value == "number";
    }
 
-   isString() {
-      return typeof this.value == "string";
+   isUnset() {
+      return this.manuallySetType != null;
    }
 
    getValue() {
       return this.value;
    }
 
+   getShaderStringFromType(type) {
+      switch (type) {
+         case "vec4":
+            return this.shaderImage.getShaderString();
+         case "float":
+            return this.value.toFixed(1);
+         case "name":
+            return this.value;
+         default:
+            console.warn("Shader variable type not implemented.");
+      }
+   }
+
    getShaderString() {
       if (this.shaderString == null) {
-         if (this.isImage()) {
-            this.shaderString = this.shaderImage.getShaderString();
-         } else if (this.isString()) {
-            this.shaderString = this.value;
-         } else if (this.isNumeric()) {
-            if (Math.floor(this.value) == this.value) {
-               this.shaderString = this.value.toFixed(1);
-            } else {
-               this.shaderString = String(this.value);
-            }
+         if (this.isUnset() || this.isStringWithData()) {
+            this.shaderString = this.getShaderStringFromType("name");
+         } else if (this.isImageWithData()) {
+            this.shaderString = this.getShaderStringFromType("vec4");
+         } else if (this.isFloatWithData()) {
+            this.shaderString = this.getShaderStringFromType("float");
          }
       }
       return this.shaderString;
    }
 
    getShaderStringOfChannel(channel) {
-      if (this.isImage() || this.isString()) {
+      if (this.isImage()) {
          return this.getShaderString() + "." + COLOR_CHANNELS[channel];
       } else {
          return this.getShaderString();

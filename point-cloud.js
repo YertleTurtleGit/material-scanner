@@ -35,18 +35,15 @@ class PointCloud {
    getAsObjString() {
       if (this.objString == null) {
          this.getZValues();
+
          console.log("Writing point cloud file string.");
          var objString = "";
-         for (
-            var x = 0;
-            x < this.dimensions[0];
-            x += 100 / POINT_CLOUD_QUALITY_PERCENT
-         ) {
-            for (
-               var y = 0;
-               y < this.dimensions[1];
-               y += 100 / POINT_CLOUD_QUALITY_PERCENT
-            ) {
+         const SAMPLING_RATE_STEP = Math.round(
+            100 / POINT_CLOUD_SAMPLING_RATE_PERCENT
+         );
+
+         for (var x = 0; x < this.dimensions[0]; x += SAMPLING_RATE_STEP) {
+            for (var y = 0; y < this.dimensions[1]; y += SAMPLING_RATE_STEP) {
                const index = x + y * this.dimensions[0];
                if (!(this.getZValues()[index] == null)) {
                   const colorIndex = index * 4;
@@ -85,34 +82,75 @@ class PointCloud {
 
    calculate() {
       console.log("Integrating normal map.");
-      this.zValues = Array(this.dimensions[0] * this.dimensions[1]).fill(null);
+
+      const ic = new ImageCalc();
+      const red = ic.getChannel(this.normalMap.getAsJsImageObject(), "r");
+      const green = ic.getChannel(this.normalMap.getAsJsImageObject(), "g");
+      const blue = ic.getChannel(this.normalMap.getAsJsImageObject(), "b");
+
+      ic.setResultChannels([
+         ic.divide(red, ic.multiply(blue, 8)),
+         ic.divide(green, ic.multiply(blue, 8)),
+         0,
+         1,
+      ]);
+
+      const gradientPixelArray = ic.getResultAsPixelArray();
+
+      this.zValues = Array(this.dimensions[0] * this.dimensions[1]).fill(0);
+
+      const Z_FACTOR = this.depthFactor / 4;
+      const GRADIENT_SHIFT = -255 / 2;
 
       var zLineOffset;
+      var zLineOffsetI;
+
       for (var y = 0; y < this.dimensions[1]; y++) {
          zLineOffset = 0;
+         zLineOffsetI = 0;
          for (var x = 0; x < this.dimensions[0]; x++) {
-            const index = x + y * this.dimensions[0];
-            const colorIndex = index * 4;
+            const xi = this.dimensions[0] - x - 1;
 
-            const horizontalGradient = this.normalMap.getAsPixelArray()[
-               colorIndex
-            ]; // red channel (light from right)
-            zLineOffset += horizontalGradient;
-            this.zValues[index] = zLineOffset * this.depthFactor;
+            const index = x + y * this.dimensions[0];
+            const indexI = xi + y * this.dimensions[0];
+
+            const baseColorIndex = index * 4;
+            const baseColorIndexI = indexI * 4;
+            const colorIndex = baseColorIndex + COLOR_CHANNELS.indexOf("r");
+            const colorIndexI = baseColorIndexI + COLOR_CHANNELS.indexOf("r");
+
+            const gradient = gradientPixelArray[colorIndex];
+            const gradientI = gradientPixelArray[colorIndexI];
+
+            zLineOffset += gradient + GRADIENT_SHIFT;
+            zLineOffsetI += gradientI + GRADIENT_SHIFT;
+
+            this.zValues[index] += zLineOffsetI - zLineOffset;
          }
       }
 
       for (var x = 0; x < this.dimensions[0]; x++) {
          zLineOffset = 0;
+         zLineOffsetI = 0;
          for (var y = 0; y < this.dimensions[1]; y++) {
-            const index = x + y * this.dimensions[0];
-            const colorIndex = index * 4;
+            const yi = this.dimensions[1] - y - 1;
 
-            const horizontalGradient = this.normalMap.getAsPixelArray()[
-               colorIndex + 1
-            ]; // green channel (light from top)
-            zLineOffset += horizontalGradient;
-            this.zValues[index] += zLineOffset * this.depthFactor;
+            const index = x + y * this.dimensions[0];
+            const indexI = x + yi * this.dimensions[0];
+
+            const baseColorIndex = index * 4;
+            const baseColorIndexI = indexI * 4;
+            const colorIndex = baseColorIndex + COLOR_CHANNELS.indexOf("g");
+            const colorIndexI = baseColorIndexI + COLOR_CHANNELS.indexOf("g");
+
+            const gradient = gradientPixelArray[colorIndex];
+            const gradientI = gradientPixelArray[colorIndexI];
+
+            zLineOffset += gradient + GRADIENT_SHIFT;
+            zLineOffsetI += gradientI + GRADIENT_SHIFT;
+
+            this.zValues[index] += zLineOffsetI - zLineOffset;
+            this.zValues[index] *= Z_FACTOR;
          }
       }
    }

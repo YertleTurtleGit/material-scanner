@@ -60,13 +60,13 @@ const POINT_CLOUD_SUFFIX = "point-cloud";
 The depth factor describes a multiplicand of the z-coordinate
 to fit the relation to x- and y-coordinates.
 */
-const DEPTH_FACTOR = 0.005;
+const DEPTH_FACTOR = 0.025;
 
 /*
 The point cloud quality describes the amount of used data.
 When set to 100, the point cloud vertex count equals to image pixel count.
 */
-const POINT_CLOUD_QUALITY_PERCENT = 10;
+const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
 
 /*
 The float precision used on the gpu. Set to "mediump" when facing errors.
