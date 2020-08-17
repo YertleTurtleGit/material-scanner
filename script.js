@@ -3,9 +3,12 @@
 document.getElementById("image-names").innerHTML =
    '"' + IMAGE_NAMES.join('_{OBJECT_NAME}", "') + '_{OBJECT_NAME}"';
 
-const dataset = new Dataset(LIGHTING_DEGREES, INPUT_DROP_AREA, allImagesLoaded);
+const dataset = new Dataset(LIGHTING_DEGREES, allImagesLoaded);
+dataset.listenForDrop(INPUT_DROP_AREA);
+dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 
 function allImagesLoaded() {
+   INPUT_DROP_AREA.remove();
    WIDTH = dataset.getImage(NORTH).width;
    HEIGHT = dataset.getImage(NORTH).height;
    startCalculation();

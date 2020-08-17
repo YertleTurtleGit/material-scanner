@@ -20,6 +20,7 @@ https://www.geogebra.org/m/FzkZPN3K
 Source:
 https://en.wikipedia.org/wiki/Del_in_cylindrical_and_spherical_coordinates
 */
+/*
 const EAST = [90, 90]; // 0° in 2d
 const NORTH_EAST = [45, 90]; // 45° in 2d
 const NORTH = [0, 0]; // 90° in 2d
@@ -28,6 +29,16 @@ const WEST = [90, 270]; // 180° in 2d
 const SOUTH_WEST = [135, 270]; // 225° in 2d
 const SOUTH = [180, 0]; // 270° in 2d
 const SOUTH_EAST = [135, 90]; // 315° in 2d
+*/
+
+const EAST = 0;
+const NORTH_EAST = 45;
+const NORTH = 90;
+const NORTH_WEST = 135;
+const WEST = 180;
+const SOUTH_WEST = 225;
+const SOUTH = 270;
+const SOUTH_EAST = 315;
 
 /*
 The lighting degrees array describes all spherical degrees.
@@ -60,13 +71,20 @@ const POINT_CLOUD_SUFFIX = "point-cloud";
 The depth factor describes a multiplicand of the z-coordinate
 to fit the relation to x- and y-coordinates.
 */
-const DEPTH_FACTOR = 0.025;
+//const DEPTH_FACTOR = 0.025;
+const DEPTH_FACTOR = 0.25;
 
 /*
 The point cloud quality describes the amount of used data.
 When set to 100, the point cloud vertex count equals to image pixel count.
 */
-const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
+//const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
+const POINT_CLOUD_SAMPLING_RATE_PERCENT = 100;
+
+/*
+The resolution used when capturing data with a webcam.
+*/
+const WEBCAM_RESOLUTION = [800, 600];
 
 /*
 The float precision used on the gpu. Set to "mediump" when facing errors.
@@ -87,6 +105,7 @@ const OUTPUT_AREA = document.getElementById("output-area");
 const NORMAL_MAP_AREA = document.getElementById("normal-map");
 const POINT_CLOUD_BUTTON = document.getElementById("point-cloud-button");
 const NORMAL_MAP_BUTTON = document.getElementById("normal-map-button");
+const CAPTURE_BUTTON = document.getElementById("capture-button");
 const C_LOG = document.getElementById("c-log");
 
 /*

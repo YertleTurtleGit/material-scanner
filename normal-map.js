@@ -69,43 +69,71 @@ class NormalMap {
          );
       }
 
-      const all = maxImage;
-      const front = ic.multiply(ic.divide(minImage, all), 2);
+      var all = maxImage;
+      var front = ic.multiply(ic.divide(minImage, all), 1);
 
-      const north = ic.divide(this.dataset.getImage(NORTH), all);
-      const northeast = ic.divide(this.dataset.getImage(NORTH_EAST), all);
-      const east = ic.divide(this.dataset.getImage(EAST), all);
-      const southeast = ic.divide(this.dataset.getImage(SOUTH_EAST), all);
-      const south = ic.divide(this.dataset.getImage(SOUTH), all);
-      const southwest = ic.divide(this.dataset.getImage(SOUTH_WEST), all);
-      const west = ic.divide(this.dataset.getImage(WEST), all);
-      const northwest = ic.divide(this.dataset.getImage(NORTH_WEST), all);
+      var north = this.dataset.getImage(NORTH);
+      var northeast = this.dataset.getImage(NORTH_EAST);
+      var east = this.dataset.getImage(EAST);
+      var southeast = this.dataset.getImage(SOUTH_EAST);
+      var south = this.dataset.getImage(SOUTH);
+      var southwest = this.dataset.getImage(SOUTH_WEST);
+      var west = this.dataset.getImage(WEST);
+      var northwest = this.dataset.getImage(NORTH_WEST);
 
-      const red = ic.add(
-         ic.multiply(1 / 4, ic.divide(east, west)),
-         ic.multiply(
-            1 / 8,
+      const noLightImage = dataset.getImage(null);
+      const hasNoLightImage = noLightImage != null;
+      if (hasNoLightImage) {
+         all = ic.substract(all, noLightImage);
+         front = ic.substract(front, noLightImage);
+
+         north = ic.substract(north, noLightImage);
+         northeast = ic.substract(northeast, noLightImage);
+         east = ic.substract(east, noLightImage);
+         southeast = ic.substract(southeast, noLightImage);
+         south = ic.substract(south, noLightImage);
+         southwest = ic.substract(southwest, noLightImage);
+         west = ic.substract(west, noLightImage);
+         northwest = ic.substract(northwest, noLightImage);
+      }
+
+      //all = ic.multiply(all, all);
+
+      north = ic.divide(north, all);
+      northeast = ic.divide(northeast, all);
+      east = ic.divide(east, all);
+      southeast = ic.divide(southeast, all);
+      south = ic.divide(south, all);
+      southwest = ic.divide(southwest, all);
+      west = ic.divide(west, all);
+      northwest = ic.divide(northwest, all);
+
+      var red = ic.add(
+         ic.divide(ic.divide(east, west), 2),
+         ic.divide(
             ic.add(
                ic.divide(northeast, southwest),
                ic.divide(southeast, northwest)
-            )
+            ),
+            8
          )
       );
 
-      const green = ic.add(
-         ic.multiply(1 / 4, ic.divide(north, south)),
-         ic.multiply(
-            1 / 8,
+      var green = ic.add(
+         ic.divide(ic.divide(north, south), 2),
+         ic.divide(
             ic.add(
                ic.divide(northeast, southwest),
                ic.divide(northwest, southeast)
-            )
+            ),
+            8
          )
       );
 
-      const blue = front;
+      var blue = front;
 
-      ic.setResultChannels([red, green, blue, 1]);
+      //ic.setResultChannels([red, green, blue, 1]);
+      ic.setResult(this.dataset.getImage(SOUTH));
       this.pixelArray = ic.getResultAsPixelArray();
       this.dataUrl = ic.getResultAsDataUrl();
       this.jsImageObject = ic.getResultAsJsImageObject(
