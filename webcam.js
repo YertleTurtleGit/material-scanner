@@ -18,7 +18,7 @@ class WebCam {
       this.context = this.canvas.getContext("2d");
 
       this.videoElem = document.createElement("video");
-      this.videoElem.width = this.width;
+      /*this.videoElem.width = this.width;
       this.videoElem.height = this.height;
       this.videoElem.style.width = "100%";
       this.videoElem.style.height = "100%";
@@ -26,7 +26,7 @@ class WebCam {
       this.videoElem.style.zIndex = 999;
       this.videoElem.style.top = 0;
       this.videoElem.style.left = 0;
-      document.body.appendChild(this.videoElem);
+      document.body.appendChild(this.videoElem);*/
 
       var constraints = { video: this.useVideo, audio: this.useAudio };
       try {
@@ -34,7 +34,7 @@ class WebCam {
          this.videoElem.srcObject = this.stream;
          this.videoElem.play();
          this.streaming = true;
-         setTimeout(this.onReadyCallback, 2000);
+         setTimeout(this.onReadyCallback, 1000);
       } catch (error) {
          console.error("An error occurred: " + error);
          this.streaming = false;

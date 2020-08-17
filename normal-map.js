@@ -132,8 +132,8 @@ class NormalMap {
 
       var blue = front;
 
-      //ic.setResultChannels([red, green, blue, 1]);
-      ic.setResult(this.dataset.getImage(SOUTH));
+      ic.setResultChannels([red, green, blue, 1]);
+      //ic.setResult(this.dataset.getImage(SOUTH));
       this.pixelArray = ic.getResultAsPixelArray();
       this.dataUrl = ic.getResultAsDataUrl();
       this.jsImageObject = ic.getResultAsJsImageObject(

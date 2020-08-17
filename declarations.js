@@ -71,8 +71,7 @@ const POINT_CLOUD_SUFFIX = "point-cloud";
 The depth factor describes a multiplicand of the z-coordinate
 to fit the relation to x- and y-coordinates.
 */
-//const DEPTH_FACTOR = 0.025;
-const DEPTH_FACTOR = 0.25;
+const DEPTH_FACTOR = 0.025;
 
 /*
 The point cloud quality describes the amount of used data.

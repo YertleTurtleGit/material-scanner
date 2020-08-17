@@ -36,7 +36,7 @@ class GradientLighting {
       this.gradientCanvasContext.fillRect(0, 0, width, height);
 
       // TODO: Wait for buffer to display draw
-      setTimeout(callback, 2000);
+      setTimeout(callback, 1000);
    }
 
    hide() {
