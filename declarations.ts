@@ -86,9 +86,13 @@ The resolution used when capturing data with a webcam.
 const WEBCAM_RESOLUTION = [800, 600];
 
 /*
-The float precision used on the gpu. Set to "mediump" when facing errors.
+The float precision used on the gpu. Set to medium when facing errors.
 */
-const GPU_GL_FLOAT_PRECISION = "highp";
+const enum GPU_GL_FLOAT_PRECISION {
+   MEDIUM = "mediump",
+   HIGH = "highp",
+}
+const GPU_PRECISION = GPU_GL_FLOAT_PRECISION.HIGH;
 
 /*
 The color channels array is used to represent the used color channels.
@@ -111,5 +115,5 @@ const C_LOG = document.getElementById("c-log");
 Width and height are set automatically by the input images.
 All images should have the same resolution.
 */
-var WIDTH;
-var HEIGHT;
+var WIDTH: number;
+var HEIGHT: number;

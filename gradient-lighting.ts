@@ -1,21 +1,24 @@
 "use strict";
 
 class GradientLighting {
+   private gradientCanvas: HTMLCanvasElement;
+   private gradientCanvasContext: CanvasRenderingContext2D;
+
    constructor() {
       this.gradientCanvas = document.createElement("canvas");
       this.gradientCanvasContext = this.gradientCanvas.getContext("2d");
       this.gradientCanvas.style.position = "absolute";
       this.gradientCanvas.style.width = "100%";
       this.gradientCanvas.style.height = "100%";
-      this.gradientCanvas.style.top = 0;
-      this.gradientCanvas.style.left = 0;
-      this.gradientCanvas.style.zIndex = 999;
+      this.gradientCanvas.style.top = "0";
+      this.gradientCanvas.style.left = "0";
+      this.gradientCanvas.style.zIndex = "999";
       this.gradientCanvas.width = window.innerWidth;
       this.gradientCanvas.height = window.innerHeight;
       document.body.appendChild(this.gradientCanvas);
    }
 
-   display(degree, callback) {
+   public display(degree: number, callback: TimerHandler) {
       const width = this.gradientCanvas.width;
       const height = this.gradientCanvas.height;
 
@@ -39,11 +42,16 @@ class GradientLighting {
       setTimeout(callback, 1000);
    }
 
-   hide() {
+   public hide() {
       this.removeGradientDivElements();
    }
 
-   getBestFitGradient(canvas, context, angleDegree, colors) {
+   private getBestFitGradient(
+      canvas: HTMLCanvasElement,
+      context: CanvasRenderingContext2D,
+      angleDegree: number,
+      colors: Array<string>
+   ) {
       const w = canvas.width;
       const h = canvas.height;
       const ctx = context;
@@ -84,7 +92,7 @@ class GradientLighting {
       return g;
    }
 
-   removeGradientDivElements() {
+   private removeGradientDivElements() {
       this.gradientCanvas.remove();
    }
 }

@@ -1,6 +1,12 @@
 "use strict";
 
 class NormalMap {
+   private dataset: Dataset;
+   private jsImageObject: ShaderVariable | HTMLImageElement;
+   private pixelArray: Uint8Array;
+   private dataUrl: string;
+   private isLoaded: boolean;
+
    constructor(dataset) {
       this.dataset = dataset;
       this.jsImageObject = null;
@@ -81,7 +87,7 @@ class NormalMap {
       var west = this.dataset.getImage(WEST);
       var northwest = this.dataset.getImage(NORTH_WEST);
 
-      const noLightImage = dataset.getImage(null);
+      const noLightImage = this.dataset.getImage(null);
       const hasNoLightImage = noLightImage != null;
       if (hasNoLightImage) {
          all = ic.substract(all, noLightImage);

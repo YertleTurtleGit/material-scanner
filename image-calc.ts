@@ -1,36 +1,38 @@
 "use strict";
 
 class ImageCalc {
+   private imageShaderConstructor: ImageShaderConstructor;
+
    constructor(onlyLuminance = false) {
-      cLog("Generating shader source.");
+      console.log("Generating shader source.");
       this.imageShaderConstructor = new ImageShaderConstructor(onlyLuminance);
    }
 
-   add(addend1, addend2) {
+   public add(addend1, addend2) {
       return this.calculate(addend1, addend2, "+");
    }
 
-   substract(minuend, subtrahend) {
+   public substract(minuend, subtrahend) {
       return this.calculate(minuend, subtrahend, "-");
    }
 
-   multiply(multiplier, multiplicand) {
+   public multiply(multiplier, multiplicand) {
       return this.calculate(multiplier, multiplicand, "*");
    }
 
-   divide(dividend, divisor) {
+   public divide(dividend, divisor) {
       return this.calculate(dividend, divisor, "/");
    }
 
-   max(comparable1, comparable2) {
+   public max(comparable1, comparable2) {
       return this.calculate(comparable1, comparable2, "max");
    }
 
-   min(comparable1, comparable2) {
+   public min(comparable1, comparable2) {
       return this.calculate(comparable1, comparable2, "min");
    }
 
-   getChannel(image, channelChar) {
+   public getChannel(image, channelChar) {
       return this.calculate(image, channelChar, ".");
    }
 
@@ -44,7 +46,7 @@ class ImageCalc {
       );
    }
 
-   calculate(operant1, operant2, operator) {
+   private calculate(operant1, operant2, operator) {
       return this.imageShaderConstructor.addCalculation(
          operant1,
          operant2,
@@ -52,43 +54,60 @@ class ImageCalc {
       );
    }
 
-   setResult(value) {
+   public setResult(value) {
       this.imageShaderConstructor.setResult(value);
    }
 
-   setResultChannels(channels) {
+   public setResultChannels(channels: Array<number | ShaderVariable>) {
       this.imageShaderConstructor.setChannelResult(channels[0], 0);
       this.imageShaderConstructor.setChannelResult(channels[1], 1);
       this.imageShaderConstructor.setChannelResult(channels[2], 2);
       this.imageShaderConstructor.setChannelResult(channels[3], 3);
    }
 
-   getResultAsJsImageObject(onloadCallback) {
+   public getResultAsJsImageObject(onloadCallback: TimerHandler) {
       return this.imageShaderConstructor.getResultJsImageObject(onloadCallback);
    }
 
-   getResultAsPixelArray() {
+   public getResultAsPixelArray() {
       return this.imageShaderConstructor.getResultPixelArray();
    }
 
-   getResultAsDataUrl() {
+   public getResultAsDataUrl() {
       return this.imageShaderConstructor.getResultAsDataUrl();
    }
 
-   purge() {
+   public purge() {
       this.imageShaderConstructor.purge();
    }
 }
 
 class ImageShaderConstructor {
-   constructor(onlyLuminance) {
-      this.floatPrecision = GPU_GL_FLOAT_PRECISION;
-      this.inputPosCoordinate = "inputPosCoordinate";
-      this.inputTexCoordinate = "inputTexCoordinate";
-      this.tmpFragColor = "tmpFragColor";
-      this.fragmentColor = "fragColor";
-      this.uvCoordinate = "uv";
-      this.lastUniqueVariableNumber = 0;
+   public static inputPosCoordinate = "inputPosCoordinate";
+   public static inputTexCoordinate = "inputTexCoordinate";
+   public static uvCoordinate = "uv";
+   public static tmpFragColor = "tmpFragColor";
+   public static fragmentColor = "fragColor";
+
+   private floatPrecision: GPU_GL_FLOAT_PRECISION;
+   private calculations: Array<ShaderCalculation>;
+   private sieves: Array<ShaderSieve>;
+   private shaderProgram: WebGLProgram;
+   private result: Array<any>;
+   private resultImage: HTMLImageElement;
+   private onlyLuminance: boolean;
+   private shaderRun: boolean;
+   private resultDataUrl: string;
+   private glCanvas: HTMLCanvasElement;
+   private glContext;
+   private resultPixelArray: Uint8Array;
+   private shaderVariableCollection: ShaderVariableCollection;
+
+   constructor(
+      onlyLuminance = false,
+      floatPrecision = GPU_GL_FLOAT_PRECISION.HIGH
+   ) {
+      this.floatPrecision = floatPrecision;
       this.calculations = [];
       this.sieves = [];
       this.shaderProgram = null;
@@ -99,7 +118,7 @@ class ImageShaderConstructor {
       this.shaderRun = false;
       this.resultDataUrl = null;
 
-      this.glCanvas = document.createElement("CANVAS");
+      this.glCanvas = document.createElement("canvas");
       this.glCanvas.width = WIDTH;
       this.glCanvas.height = HEIGHT;
       //document.body.appendChild(glCanvas);
@@ -111,11 +130,11 @@ class ImageShaderConstructor {
       this.shaderVariableCollection = new ShaderVariableCollection();
    }
 
-   purge() {
+   public purge() {
       this.glContext.getExtension("WEBGL_lose_context").loseContext();
    }
 
-   getResultJsImageObject(onloadCallback) {
+   public getResultJsImageObject(onloadCallback) {
       if (this.resultImage === null) {
          this.resultImage = new Image();
          this.resultImage.addEventListener("load", onloadCallback);
@@ -124,14 +143,14 @@ class ImageShaderConstructor {
       return this.resultImage;
    }
 
-   getResultPixelArray() {
+   public getResultPixelArray() {
       if (!this.shaderRun) {
          this.runShader();
       }
       return this.resultPixelArray;
    }
 
-   getResultAsDataUrl() {
+   public getResultAsDataUrl() {
       if (!this.shaderRun) {
          this.runShader();
       }
@@ -141,16 +160,16 @@ class ImageShaderConstructor {
       return this.resultDataUrl;
    }
 
-   runShader() {
+   private runShader() {
       this.loadShaderImagesIntoShader();
 
       var framePositionLocation = this.glContext.getAttribLocation(
          this.getShaderProgram(),
-         this.inputPosCoordinate
+         ImageShaderConstructor.inputPosCoordinate
       );
       var frameTextureLocation = this.glContext.getAttribLocation(
          this.getShaderProgram(),
-         this.inputTexCoordinate
+         ImageShaderConstructor.inputTexCoordinate
       );
 
       const FLOAT_SIZE = Float32Array.BYTES_PER_ELEMENT;
@@ -234,7 +253,7 @@ class ImageShaderConstructor {
       this.shaderRun = true;
    }
 
-   getShaderProgram() {
+   private getShaderProgram() {
       if (this.shaderProgram == null) {
          var vertexShader = this.glContext.createShader(
             this.glContext.VERTEX_SHADER
@@ -252,11 +271,11 @@ class ImageShaderConstructor {
             this.getFragmentShaderSource()
          );
 
-         cLog("Compiling shader program.");
+         console.log("Compiling shader program.");
          this.glContext.compileShader(vertexShader);
          this.glContext.compileShader(fragmentShader);
 
-         cLog("Linking shader program.");
+         console.log("Linking shader program.");
          var shaderProgram = this.glContext.createProgram();
          this.glContext.attachShader(shaderProgram, vertexShader);
          this.glContext.attachShader(shaderProgram, fragmentShader);
@@ -267,13 +286,13 @@ class ImageShaderConstructor {
       return this.shaderProgram;
    }
 
-   loadShaderImagesIntoShader() {
+   private loadShaderImagesIntoShader() {
       this.glContext.bindTexture(this.glContext.TEXTURE_2D, null);
       this.glContext.useProgram(this.getShaderProgram());
       this.glContext.clear(
          this.glContext.COLOR_BUFFER_BIT | this.glContext.DEPTH_BUFFER_BIT
       );
-      cLog("Loading images for gpu.");
+      console.log("Loading images for gpu.");
       for (
          var i = 0;
          i < this.shaderVariableCollection.getShaderImages().length;
@@ -302,9 +321,7 @@ class ImageShaderConstructor {
       }
    }
 
-   addFloat;
-
-   addCalculation(operant1, operant2, operator) {
+   public addCalculation(operant1, operant2, operator) {
       var calculation = new ShaderCalculation(
          operant1,
          operant2,
@@ -316,7 +333,7 @@ class ImageShaderConstructor {
       return calculation.getResult();
    }
 
-   /*addSieve(image1, factor1, conditionOperator, image2, factor2) {
+   public addSieve(image1, factor1, conditionOperator, image2, factor2) {
       var sieve = new ShaderSieve(
          image1,
          factor1,
@@ -328,25 +345,30 @@ class ImageShaderConstructor {
       );
       this.sieves.push(sieve);
       return sieve.getResult();
-   }*/
+   }
 
-   getVertexShaderSource() {
+   private getVertexShaderSource() {
       return [
          "#version 300 es",
          "",
-         "in vec3 " + this.inputPosCoordinate + ";",
-         "in vec2 " + this.inputTexCoordinate + ";",
+         "in vec3 " + ImageShaderConstructor.inputPosCoordinate + ";",
+         "in vec2 " + ImageShaderConstructor.inputTexCoordinate + ";",
          "",
-         "out vec2 " + this.uvCoordinate + ";",
+         "out vec2 " + ImageShaderConstructor.uvCoordinate + ";",
          "",
          "void main() {",
-         this.uvCoordinate + " = " + this.inputTexCoordinate + ";",
-         "gl_Position = vec4(" + this.inputPosCoordinate + ", 1.0);",
+         ImageShaderConstructor.uvCoordinate +
+            " = " +
+            ImageShaderConstructor.inputTexCoordinate +
+            ";",
+         "gl_Position = vec4(" +
+            ImageShaderConstructor.inputPosCoordinate +
+            ", 1.0);",
          "}",
       ].join("\n");
    }
 
-   getFragmentShaderSource() {
+   private getFragmentShaderSource() {
       var fragmentShaderSource = [];
       fragmentShaderSource.push(this.getPreFragmentShaderSource());
       fragmentShaderSource.push(this.getUniformDeclarationsSource());
@@ -355,7 +377,7 @@ class ImageShaderConstructor {
       return fragmentShaderSource.join("\n");
    }
 
-   getVoidMainFunction() {
+   private getVoidMainFunction() {
       var mainSource = [""];
       mainSource.push("void main() {");
       mainSource.push(this.getColorDeclarationSource());
@@ -364,17 +386,17 @@ class ImageShaderConstructor {
       return mainSource.join("\n");
    }
 
-   getPreFragmentShaderSource() {
+   private getPreFragmentShaderSource() {
       return [
          "#version 300 es",
          "precision " + this.floatPrecision + " float;",
          "",
-         "in vec2 " + this.uvCoordinate + ";",
-         "out vec4 " + this.fragmentColor + ";",
+         "in vec2 " + ImageShaderConstructor.uvCoordinate + ";",
+         "out vec4 " + ImageShaderConstructor.fragmentColor + ";",
       ].join("\n");
    }
 
-   getUniformDeclarationsSource() {
+   private getUniformDeclarationsSource() {
       var uniformDeclarationsSource = [""];
       for (
          var i = 0;
@@ -392,7 +414,7 @@ class ImageShaderConstructor {
       return uniformDeclarationsSource.join("\n");
    }
 
-   getColorDeclarationSource() {
+   private getColorDeclarationSource() {
       var colorDeclarationSource = [];
       for (
          var i = 0;
@@ -410,7 +432,7 @@ class ImageShaderConstructor {
                   .getShaderImages()
                   [i].getUniformVariable() +
                ", " +
-               this.uvCoordinate +
+               ImageShaderConstructor.uvCoordinate +
                ");"
          );
          if (this.onlyLuminance) {
@@ -461,7 +483,7 @@ class ImageShaderConstructor {
       return colorDeclarationSource.join("\n");
    }
 
-   setResult(resultValue) {
+   public setResult(resultValue: any) {
       resultValue = new ShaderVariable(
          resultValue,
          this.shaderVariableCollection,
@@ -473,7 +495,7 @@ class ImageShaderConstructor {
       }
    }
 
-   setChannelResult(resultValue, channel) {
+   public setChannelResult(resultValue: any, channel: number) {
       resultValue = new ShaderVariable(
          resultValue,
          this.shaderVariableCollection,
@@ -482,7 +504,7 @@ class ImageShaderConstructor {
       this.result[channel] = resultValue.getShaderStringOfChannel(channel);
    }
 
-   getCalculationSource() {
+   private getCalculationSource() {
       var calculationSource = [""];
       for (var i = 0; i < this.calculations.length; i++) {
          calculationSource.push(this.calculations[i].getShaderString());
@@ -493,22 +515,38 @@ class ImageShaderConstructor {
       }
 
       calculationSource.push(
-         this.fragmentColor + " = vec4(" + this.result.join(", ") + ");"
+         ImageShaderConstructor.fragmentColor +
+            " = vec4(" +
+            this.result.join(", ") +
+            ");"
       );
       return calculationSource.join("\n");
    }
 }
 
 class ShaderCalculation {
+   private operant1: any;
+   private operant2: any;
+   private operator: String;
+   private result: ShaderVariable;
+
    constructor(
-      operant1,
-      operant2,
-      operator,
-      shaderVariableCollection,
-      glContext
+      operant1: any,
+      operant2: any,
+      operator: string,
+      shaderVariableCollection: ShaderVariableCollection,
+      glContext: WebGL2RenderingContext
    ) {
-      this.operant1 = this.cast(operant1, shaderVariableCollection, glContext);
-      this.operant2 = this.cast(operant2, shaderVariableCollection, glContext);
+      this.operant1 = this.castShaderVariable(
+         operant1,
+         shaderVariableCollection,
+         glContext
+      );
+      this.operant2 = this.castShaderVariable(
+         operant2,
+         shaderVariableCollection,
+         glContext
+      );
       this.operator = operator;
       this.result = new ShaderVariable(
          null,
@@ -518,7 +556,11 @@ class ShaderCalculation {
       );
    }
 
-   cast(castFrom, shaderVariableCollection, glContext) {
+   private castShaderVariable(
+      castFrom: any,
+      shaderVariableCollection: ShaderVariableCollection,
+      glContext: WebGL2RenderingContext
+   ) {
       if (castFrom instanceof ShaderVariable) {
          return castFrom;
       } else {
@@ -530,11 +572,11 @@ class ShaderCalculation {
       }
    }
 
-   getResult() {
+   public getResult() {
       return this.result;
    }
 
-   getResultType() {
+   private getResultType() {
       if (this.operator === ".") {
          return "float";
       }
@@ -545,7 +587,7 @@ class ShaderCalculation {
       }
    }
 
-   getShaderString() {
+   public getShaderString() {
       if (this.operator == "max" || this.operator == "min") {
          return (
             this.getResultType() +
@@ -586,7 +628,14 @@ class ShaderCalculation {
    }
 }
 
-/*class ShaderSieve {
+class ShaderSieve {
+   private compare1: ShaderVariable;
+   private compare2: ShaderVariable;
+   private factor1;
+   private factor2;
+   private condition: string;
+   private result: string;
+
    constructor(
       compare1,
       factor1,
@@ -634,9 +683,10 @@ class ShaderCalculation {
          "}",
       ].join("\n");
    }
-}*/
+}
 
 class ShaderVariableCollection {
+   private shaderImages: Array<ShaderImage>;
    constructor() {
       this.shaderImages = [];
    }
@@ -651,6 +701,12 @@ class ShaderVariableCollection {
 }
 
 class ShaderVariable {
+   private value;
+   private collection;
+   private manuallySetType;
+   private glContext: WebGL2RenderingContext;
+   private shaderString: string;
+   private shaderImage: ShaderImage;
    constructor(value, collection, glContext, manuallySetType = null) {
       if (!this.cast(value)) {
          this.value = value;
@@ -780,6 +836,15 @@ class ShaderVariable {
 }
 
 class ShaderImage {
+   public static count = 0;
+
+   private jsImageObject: HTMLImageElement;
+   private glContext: WebGL2RenderingContext;
+   private imageVariable: string;
+   private colorVariable: string;
+   private texture: WebGLTexture;
+   private count: number;
+
    constructor(jsImageObject, glContext) {
       this.jsImageObject = jsImageObject;
       this.glContext = glContext;
@@ -851,9 +916,10 @@ class ShaderImage {
       return this.getColorVariable();
    }
 }
-ShaderImage.count = 0;
 
 class UniqueVariable {
+   public static uniqueImageNumber = 0;
+
    static get uniqueNumber() {
       return UniqueVariable.uniqueImageNumber;
    }
@@ -869,4 +935,3 @@ class UniqueVariable {
       );
    }
 }
-UniqueVariable.uniqueNumber = 0;

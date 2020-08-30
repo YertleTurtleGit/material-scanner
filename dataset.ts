@@ -1,7 +1,22 @@
 "use strict";
 
+const enum DATATYPE {
+   WEBCAM = "webcam",
+   DROP = "drop",
+}
+
 class Dataset {
-   constructor(lightingDegrees, dataLoadedCallback) {
+   private lightingDegrees: Array<number>;
+   private dataLoadedCallback: TimerHandler;
+   private jsImageObjects: Array<HTMLImageElement | ShaderVariable>;
+   private noLightImageObject: HTMLImageElement;
+   private dataInput: DataInput;
+   private type: DATATYPE;
+
+   constructor(
+      lightingDegrees: Array<number>,
+      dataLoadedCallback: TimerHandler
+   ) {
       this.lightingDegrees = lightingDegrees;
       this.dataLoadedCallback = dataLoadedCallback;
       this.jsImageObjects = new Array(lightingDegrees.length).fill(null);
@@ -10,18 +25,28 @@ class Dataset {
       this.type = null;
    }
 
-   getDataInput() {
+   public getImageDimensions() {
+      if (this.jsImageObjects[0] instanceof ShaderVariable) {
+         return [
+            this.jsImageObjects[0].getValue().width,
+            this.jsImageObjects[0].getValue().height,
+         ];
+      }
+      return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
+   }
+
+   private getDataInput() {
       return this.dataInput;
    }
 
-   getType() {
+   public getType() {
       return this.type;
    }
 
-   listenForDrop(dropArea) {
+   public listenForDrop(dropArea: HTMLElement) {
       dropArea.addEventListener(
          "dragover",
-         function (eventObject) {
+         function (eventObject: DragEvent) {
             eventObject.preventDefault();
          },
          false
@@ -33,10 +58,10 @@ class Dataset {
       );
    }
 
-   dataDropped(dropArea, eventObject) {
+   private dataDropped(dropArea: HTMLDivElement, eventObject: DragEvent) {
       eventObject.preventDefault();
 
-      this.type = DataInput.TYPE.DROP;
+      this.type = DATATYPE.DROP;
       this.dataInput = new DataInput(this);
 
       this.dataInput.setInputClass(
@@ -52,11 +77,11 @@ class Dataset {
       this.showLoadingArea();
    }
 
-   showLoadingArea() {
+   private showLoadingArea() {
       LOADING_AREA.style.display = "block";
    }
 
-   listenForWebcamButtonClick(webcamButton, webcamResolution) {
+   public listenForWebcamButtonClick(webcamButton, webcamResolution) {
       webcamButton.addEventListener(
          "click",
          this.webcamButtonClicked.bind(this, webcamResolution),
@@ -64,8 +89,8 @@ class Dataset {
       );
    }
 
-   webcamButtonClicked(webcamResolution) {
-      this.type = DataInput.TYPE.WEBCAM;
+   private webcamButtonClicked(webcamResolution: Array<number>) {
+      this.type = DATATYPE.WEBCAM;
       this.dataInput = new DataInput(this);
 
       this.dataInput.setInputClass(
@@ -78,7 +103,7 @@ class Dataset {
       );
    }
 
-   setImage(lightingDegree, jsImageObject) {
+   public setImage(lightingDegree, jsImageObject) {
       for (var i = 0; i < this.lightingDegrees.length; i++) {
          if (this.lightingDegrees[i] == lightingDegree) {
             this.jsImageObjects[i] = jsImageObject;
@@ -91,7 +116,7 @@ class Dataset {
       console.warn("Not found lighting degree in dataset to set image.");
    }
 
-   getImage(lightingDegree) {
+   public getImage(lightingDegree) {
       for (var i = 0; i < this.lightingDegrees.length; i++) {
          if (this.lightingDegrees[i] === lightingDegree) {
             return this.jsImageObjects[i];
@@ -105,55 +130,56 @@ class Dataset {
       return null;
    }
 
-   getObjectName() {
+   public getObjectName() {
       return this.dataInput.getObjectName();
    }
 
-   dataLoaded() {
+   private dataLoaded() {
       console.log("Data loaded.");
       setTimeout(this.dataLoadedCallback, 0);
    }
 }
 
 class DataInput {
-   constructor(dataset) {
+   dataset: Dataset;
+   type: DATATYPE;
+   inputClass: any;
+
+   constructor(dataset: Dataset) {
       this.dataset = dataset;
       this.type = dataset.getType();
       this.inputClass = null;
    }
 
-   getObjectName() {
+   public getObjectName() {
       return this.inputClass.getObjectName();
    }
 
-   setInputClass(inputClass) {
+   public setInputClass(inputClass) {
       this.inputClass = inputClass;
    }
 
-   inputImage(lightingDegree, image) {
+   public inputImage(lightingDegree, image) {
       this.dataset.setImage(lightingDegree, image);
    }
 
-   getType() {
+   private getType() {
       return this.type;
    }
-
-   initialize() {
-      if (this.getType() == DataInput.TYPE.DROP) {
-      } else if (this.getType() == DataInput.TYPE.WEBCAM) {
-      } else {
-         console.warn("Data input type not supported.");
-      }
-   }
 }
-DataInput.TYPE = { WEBCAM: "webcam", DROP: "drop" };
 
 class DropInput {
+   private dataInput: DataInput;
+   private lightingDegrees: Array<number>;
+   private droppedDataLoadedCallback: TimerHandler;
+   private droppedFiles: FileList;
+   private imagesLoaded: number;
+
    constructor(
-      dataInput,
-      lightingDegrees,
-      droppedFiles,
-      droppedDataLoadedCallback
+      dataInput: DataInput,
+      lightingDegrees: Array<number>,
+      droppedFiles: FileList,
+      droppedDataLoadedCallback: TimerHandler
    ) {
       this.dataInput = dataInput;
       this.lightingDegrees = lightingDegrees;
@@ -165,7 +191,7 @@ class DropInput {
       this.loadAllImages();
    }
 
-   getObjectName() {
+   private getObjectName() {
       var objectName = [];
       const split = this.droppedFiles[0].name.split(".")[0].split("_");
       for (var i = 1; i < split.length; i++) {
@@ -175,8 +201,8 @@ class DropInput {
       return objectName.join("_");
    }
 
-   loadAllImages() {
-      cLog("Loading " + this.droppedFiles.length + " images for cpu.");
+   private loadAllImages() {
+      console.log("Loading " + this.droppedFiles.length + " images for cpu.");
 
       for (var i = 0; i < this.droppedFiles.length; i++) {
          const fileName = this.droppedFiles[i].name.split(".")[0];
@@ -190,7 +216,7 @@ class DropInput {
             var reader = new FileReader();
             reader.addEventListener(
                "load",
-               this.readerLoaded.bind(this, reader, i, imageDegree)
+               this.readerLoaded.bind(this, reader, imageDegree)
             );
             reader.readAsDataURL(this.droppedFiles[i]);
          } else {
@@ -199,17 +225,25 @@ class DropInput {
       }
    }
 
-   readerLoaded(reader, index, imageDegree, ev) {
-      reader.removeEventListener("load", this.readerLoaded);
+   private readerLoaded(reader: FileReader, imageDegree: number) {
+      //TODO: Beautify
+      var listener;
+      listener = this.readerLoaded;
+
+      reader.removeEventListener("load", listener);
       var image = new Image();
       image.addEventListener(
          "load",
          this.imageLoaded.bind(this, image, imageDegree)
       );
-      image.src = ev.target.result;
+
+      //TODO: Beautify
+      var readerResult;
+      readerResult = reader.result;
+      image.src = readerResult;
    }
 
-   imageLoaded(image, imageDegree) {
+   private imageLoaded(image, imageDegree) {
       this.imagesLoaded++;
       image.removeEventListener("load", this.imageLoaded);
       this.dataInput.inputImage(imageDegree, image);
@@ -220,10 +254,26 @@ class DropInput {
 }
 
 class WebcamInput {
-   constructor(dataInput, resolution, lightingDegrees, dataLoadedCallback) {
+   private dataInput: DataInput;
+   private gradientLighting: GradientLighting;
+   private webcam: Webcam;
+   private dataLoadedCallback: TimerHandler;
+   private imageDataList: Array<string>;
+   private jsImageObjectList: Array<HTMLImageElement>;
+   private lightingDegrees: Array<number>;
+   private loadedImages: number;
+   private noLightImageData: string;
+   private noLightImageObject: HTMLImageElement;
+
+   constructor(
+      dataInput: DataInput,
+      resolution: Array<number>,
+      lightingDegrees: Array<number>,
+      dataLoadedCallback: TimerHandler
+   ) {
       this.dataInput = dataInput;
       this.gradientLighting = new GradientLighting();
-      this.webCam = new WebCam(resolution, this.startCapture.bind(this));
+      this.webcam = new Webcam(resolution, this.startCapture.bind(this));
       this.dataLoadedCallback = dataLoadedCallback;
 
       this.imageDataList = Array(lightingDegrees.length).fill(null);
@@ -232,18 +282,18 @@ class WebcamInput {
       this.loadedImages = 0;
       this.noLightImageData = null;
       this.noLightImageObject = null;
-      this.webCam.startStreaming();
+      this.webcam.startStreaming();
    }
 
-   getObjectName() {
+   private getObjectName() {
       return "webcam";
    }
 
-   isReadyToCapture() {
-      return this.webCam.isReady();
+   private isReadyToCapture() {
+      return this.webcam.isReady();
    }
 
-   getNextLightingDegreeIndex() {
+   private getNextLightingDegreeIndex() {
       for (var i = 0; i < this.lightingDegrees.length; i++) {
          if (this.imageDataList[i] == null) {
             return i;
@@ -252,7 +302,7 @@ class WebcamInput {
       return null;
    }
 
-   getImage(lightingDegree) {
+   private getImage(lightingDegree) {
       for (var i = 0; i < this.lightingDegrees.length; i++) {
          if (this.lightingDegrees[i] == lightingDegree) {
             return this.jsImageObjectList[i];
@@ -263,7 +313,7 @@ class WebcamInput {
       }
    }
 
-   getImageData(lightingDegree) {
+   private getImageData(lightingDegree) {
       for (var i = 0; i < this.lightingDegrees.length; i++) {
          if (this.lightingDegrees[i] == lightingDegree) {
             return this.imageDataList[i];
@@ -274,7 +324,7 @@ class WebcamInput {
       }
    }
 
-   setImageData(lightingDegree, imageData) {
+   private setImageData(lightingDegree, imageData) {
       for (var i = 0; i < this.lightingDegrees.length; i++) {
          if (this.lightingDegrees[i] == lightingDegree) {
             this.imageDataList[i] = imageData;
@@ -289,15 +339,18 @@ class WebcamInput {
       }
    }
 
-   startCapture() {
-      this.webCam.purgeDisplay();
+   public startCapture() {
+      this.webcam.purgeDisplay();
       this.gradientLighting.display(
          this.lightingDegrees[0],
          this.singleCapture.bind(this, this.lightingDegrees[0])
       );
    }
 
-   imageLoadedFromData(image, lightingDegree, ev) {
+   private imageLoadedFromData(
+      image: HTMLImageElement,
+      lightingDegree: Array<number>
+   ) {
       console.log(lightingDegree + " image loaded.");
       //image.removeEventListener("load", ev);
       this.loadedImages++;
@@ -308,7 +361,7 @@ class WebcamInput {
       }
    }
 
-   loadAllImagesFromData() {
+   private loadAllImagesFromData() {
       for (var i = 0; i < this.lightingDegrees.length; i++) {
          const image = new Image();
          image.addEventListener(
@@ -326,7 +379,7 @@ class WebcamInput {
       image.src = this.noLightImageData;
    }
 
-   capture() {
+   private capture() {
       var nextLightingDegreeIndex = this.getNextLightingDegreeIndex();
 
       if (nextLightingDegreeIndex != null) {
@@ -342,18 +395,18 @@ class WebcamInput {
          );
       } else {
          this.gradientLighting.hide();
-         this.webCam.purge();
+         this.webcam.purge();
          this.loadAllImagesFromData();
       }
    }
 
-   singleCapture(lightingDegree) {
+   private singleCapture(lightingDegree) {
       console.log("capture " + lightingDegree + " degree image.");
       setTimeout(
          this.setImageData.bind(
             this,
             lightingDegree,
-            this.webCam.takePicture()
+            this.webcam.takePicture()
          ),
          1000
       );

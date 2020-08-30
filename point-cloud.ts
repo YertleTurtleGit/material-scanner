@@ -1,6 +1,13 @@
 "use strict";
 
 class PointCloud {
+   private normalMap: NormalMap;
+   private depthFactor: number;
+   private colorPixelArray: Array<number>;
+   private dimensions: Array<number>;
+   private zValues: Array<number>;
+   private objString: string;
+
    constructor(normalMap, dimensions, depthFactor, colorPixelArray) {
       this.normalMap = normalMap;
       this.depthFactor = depthFactor;
@@ -184,10 +191,10 @@ class PointCloud {
       return true;
    }
 
-   getGradientFromDegree(degree) {
+   /*getGradientFromDegree(degree) {
       const radians = degree * DEGREE_TO_RADIANS_FACTOR;
       return [Math.cos(radians), Math.sin(radians)];
-   }
+   }*/
 
    getFrontalDegreeFromSphericalDegree(sphericalDegree) {
       switch (sphericalDegree) {
@@ -213,7 +220,7 @@ class PointCloud {
       }
    }
 
-   getPixelLine(outerStartPixel, sphericalDegree) {
+   /*getPixelLine(outerStartPixel, sphericalDegree) {
       if (outerStartPixel == null) {
          return null;
       }
@@ -245,5 +252,5 @@ class PointCloud {
       } else {
          return null;
       }
-   }
+   }*/
 }

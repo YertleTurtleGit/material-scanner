@@ -1,6 +1,18 @@
 "use strict";
 
-class WebCam {
+class Webcam {
+   private streaming: boolean;
+   private width: number;
+   private height: number;
+   private onReadyCallback: TimerHandler;
+
+   private useVideo: boolean;
+   private useAudio: boolean;
+   private canvas: HTMLCanvasElement;
+   private context: CanvasRenderingContext2D;
+   private videoElem: HTMLVideoElement;
+   private stream;
+
    constructor(resolution, onReadyCallback) {
       this.streaming = false;
       this.width = resolution[0];

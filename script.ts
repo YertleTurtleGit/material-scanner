@@ -9,8 +9,8 @@ dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 
 function allImagesLoaded() {
    INPUT_DROP_AREA.remove();
-   WIDTH = dataset.getImage(NORTH).width;
-   HEIGHT = dataset.getImage(NORTH).height;
+   WIDTH = dataset.getImageDimensions()[0];
+   HEIGHT = dataset.getImageDimensions()[1];
    startCalculation();
 }
 
