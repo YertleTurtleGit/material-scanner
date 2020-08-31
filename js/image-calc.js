@@ -110,13 +110,13 @@ class ImageShaderConstructor {
         var vboFrameV = this.glContext.createBuffer();
         this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, vboFrameV);
         this.glContext.bufferData(this.glContext.ARRAY_BUFFER, new Float32Array(frameVertices), this.glContext.STATIC_DRAW);
-        this.glContext.vertexAttribPointer(framePositionLocation, 2, this.glContext.FLOAT, this.glContext.FALSE, 2 * FLOAT_SIZE, 0);
+        this.glContext.vertexAttribPointer(framePositionLocation, 2, this.glContext.FLOAT, false, 2 * FLOAT_SIZE, 0);
         this.glContext.enableVertexAttribArray(framePositionLocation);
         this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, null);
         var vboFrameT = this.glContext.createBuffer();
         this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, vboFrameT);
         this.glContext.bufferData(this.glContext.ARRAY_BUFFER, new Float32Array(frameTextCoords), this.glContext.STATIC_DRAW);
-        this.glContext.vertexAttribPointer(frameTextureLocation, 2, this.glContext.FLOAT, this.glContext.FALSE, 2 * FLOAT_SIZE, 0);
+        this.glContext.vertexAttribPointer(frameTextureLocation, 2, this.glContext.FLOAT, false, 2 * FLOAT_SIZE, 0);
         this.glContext.enableVertexAttribArray(frameTextureLocation);
         this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, null);
         this.glContext.bindVertexArray(null);

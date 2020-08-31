@@ -2,12 +2,12 @@
 
 class NormalMap {
    private dataset: Dataset;
-   private jsImageObject: ShaderVariable | HTMLImageElement;
+   private jsImageObject: HTMLImageElement;
    private pixelArray: Uint8Array;
    private dataUrl: string;
    private isLoaded: boolean;
 
-   constructor(dataset) {
+   constructor(dataset: Dataset) {
       this.dataset = dataset;
       this.jsImageObject = null;
       this.pixelArray = null;
@@ -15,12 +15,12 @@ class NormalMap {
       this.isLoaded = false;
    }
 
-   loaded(onloadCallback) {
+   loaded(onloadCallback: TimerHandler) {
       this.isLoaded = true;
       setTimeout(onloadCallback, 0);
    }
 
-   downloadAsImage(fileName) {
+   downloadAsImage(fileName: string) {
       fileName += ".png";
       var element = document.createElement("a");
       element.setAttribute("href", this.getAsDataUrl());
@@ -56,7 +56,7 @@ class NormalMap {
       return null;
    }
 
-   calculate(onloadCallback) {
+   calculate(onloadCallback: any) {
       const ic = new ImageCalc(true);
 
       var maxImage = this.dataset.getImage(LIGHTING_DEGREES[0]);

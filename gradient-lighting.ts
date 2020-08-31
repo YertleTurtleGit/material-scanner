@@ -50,7 +50,7 @@ class GradientLighting {
       canvas: HTMLCanvasElement,
       context: CanvasRenderingContext2D,
       angleDegree: number,
-      colors: Array<string>
+      colors: string[]
    ) {
       const w = canvas.width;
       const h = canvas.height;

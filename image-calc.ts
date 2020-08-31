@@ -8,35 +8,56 @@ class ImageCalc {
       this.imageShaderConstructor = new ImageShaderConstructor(onlyLuminance);
    }
 
-   public add(addend1, addend2) {
+   public add(addend1: ShaderVariable, addend2: ShaderVariable) {
       return this.calculate(addend1, addend2, "+");
    }
 
-   public substract(minuend, subtrahend) {
+   public substract(
+      minuend: HTMLImageElement | ShaderVariable,
+      subtrahend: HTMLImageElement | ShaderVariable
+   ) {
       return this.calculate(minuend, subtrahend, "-");
    }
 
-   public multiply(multiplier, multiplicand) {
+   public multiply(multiplier: ShaderVariable, multiplicand: number) {
       return this.calculate(multiplier, multiplicand, "*");
    }
 
-   public divide(dividend, divisor) {
+   public divide(
+      dividend: HTMLImageElement | ShaderVariable,
+      divisor: number | HTMLImageElement | ShaderVariable
+   ) {
       return this.calculate(dividend, divisor, "/");
    }
 
-   public max(comparable1, comparable2) {
+   public max(
+      comparable1: HTMLImageElement | ShaderVariable,
+      comparable2: HTMLImageElement | ShaderVariable
+   ) {
       return this.calculate(comparable1, comparable2, "max");
    }
 
-   public min(comparable1, comparable2) {
+   public min(
+      comparable1: HTMLImageElement | ShaderVariable,
+      comparable2: HTMLImageElement | ShaderVariable
+   ) {
       return this.calculate(comparable1, comparable2, "min");
    }
 
-   public getChannel(image, channelChar) {
+   public getChannel(
+      image: HTMLImageElement | ShaderVariable,
+      channelChar: string
+   ) {
       return this.calculate(image, channelChar, ".");
    }
 
-   sieve(image1, factor1, conditionOperator, image2, factor2) {
+   sieve(
+      image1: any,
+      factor1: any,
+      conditionOperator: any,
+      image2: any,
+      factor2: any
+   ) {
       return this.imageShaderConstructor.addSieve(
          image1,
          factor1,
@@ -46,7 +67,7 @@ class ImageCalc {
       );
    }
 
-   private calculate(operant1, operant2, operator) {
+   private calculate(operant1: any, operant2: any, operator: string) {
       return this.imageShaderConstructor.addCalculation(
          operant1,
          operant2,
@@ -54,18 +75,18 @@ class ImageCalc {
       );
    }
 
-   public setResult(value) {
+   public setResult(value: HTMLImageElement | ShaderVariable) {
       this.imageShaderConstructor.setResult(value);
    }
 
-   public setResultChannels(channels: Array<number | ShaderVariable>) {
+   public setResultChannels(channels: (number | ShaderVariable)[]) {
       this.imageShaderConstructor.setChannelResult(channels[0], 0);
       this.imageShaderConstructor.setChannelResult(channels[1], 1);
       this.imageShaderConstructor.setChannelResult(channels[2], 2);
       this.imageShaderConstructor.setChannelResult(channels[3], 3);
    }
 
-   public getResultAsJsImageObject(onloadCallback: TimerHandler) {
+   public getResultAsJsImageObject(onloadCallback: EventListener) {
       return this.imageShaderConstructor.getResultJsImageObject(onloadCallback);
    }
 
@@ -90,16 +111,16 @@ class ImageShaderConstructor {
    public static fragmentColor = "fragColor";
 
    private floatPrecision: GPU_GL_FLOAT_PRECISION;
-   private calculations: Array<ShaderCalculation>;
-   private sieves: Array<ShaderSieve>;
+   private calculations: ShaderCalculation[];
+   private sieves: ShaderSieve[];
    private shaderProgram: WebGLProgram;
-   private result: Array<any>;
+   private result: any[];
    private resultImage: HTMLImageElement;
    private onlyLuminance: boolean;
    private shaderRun: boolean;
    private resultDataUrl: string;
    private glCanvas: HTMLCanvasElement;
-   private glContext;
+   private glContext: WebGL2RenderingContext;
    private resultPixelArray: Uint8Array;
    private shaderVariableCollection: ShaderVariableCollection;
 
@@ -134,7 +155,7 @@ class ImageShaderConstructor {
       this.glContext.getExtension("WEBGL_lose_context").loseContext();
    }
 
-   public getResultJsImageObject(onloadCallback) {
+   public getResultJsImageObject(onloadCallback: EventListener) {
       if (this.resultImage === null) {
          this.resultImage = new Image();
          this.resultImage.addEventListener("load", onloadCallback);
@@ -192,7 +213,7 @@ class ImageShaderConstructor {
          framePositionLocation,
          2,
          this.glContext.FLOAT,
-         this.glContext.FALSE,
+         false,
          2 * FLOAT_SIZE,
          0
       );
@@ -210,7 +231,7 @@ class ImageShaderConstructor {
          frameTextureLocation,
          2,
          this.glContext.FLOAT,
-         this.glContext.FALSE,
+         false,
          2 * FLOAT_SIZE,
          0
       );
@@ -321,7 +342,7 @@ class ImageShaderConstructor {
       }
    }
 
-   public addCalculation(operant1, operant2, operator) {
+   public addCalculation(operant1: any, operant2: any, operator: string) {
       var calculation = new ShaderCalculation(
          operant1,
          operant2,
@@ -333,7 +354,13 @@ class ImageShaderConstructor {
       return calculation.getResult();
    }
 
-   public addSieve(image1, factor1, conditionOperator, image2, factor2) {
+   public addSieve(
+      image1: any,
+      factor1: any,
+      conditionOperator: any,
+      image2: any,
+      factor2: any
+   ) {
       var sieve = new ShaderSieve(
          image1,
          factor1,
@@ -631,19 +658,19 @@ class ShaderCalculation {
 class ShaderSieve {
    private compare1: ShaderVariable;
    private compare2: ShaderVariable;
-   private factor1;
-   private factor2;
+   private factor1: string;
+   private factor2: string;
    private condition: string;
    private result: string;
 
    constructor(
-      compare1,
-      factor1,
-      conditionOperator,
-      compare2,
-      factor2,
-      shaderVariableCollection,
-      glContext
+      compare1: any,
+      factor1: any,
+      conditionOperator: string,
+      compare2: any,
+      factor2: any,
+      shaderVariableCollection: ShaderVariableCollection,
+      glContext: any
    ) {
       this.compare1 = new ShaderVariable(
          compare1,
@@ -686,7 +713,7 @@ class ShaderSieve {
 }
 
 class ShaderVariableCollection {
-   private shaderImages: Array<ShaderImage>;
+   private shaderImages: ShaderImage[];
    constructor() {
       this.shaderImages = [];
    }
@@ -695,19 +722,24 @@ class ShaderVariableCollection {
       return this.shaderImages;
    }
 
-   addShaderImage(shaderImage) {
+   addShaderImage(shaderImage: ShaderImage) {
       this.shaderImages.push(shaderImage);
    }
 }
 
 class ShaderVariable {
-   private value;
-   private collection;
-   private manuallySetType;
+   private value: any;
+   private collection: ShaderVariableCollection;
+   private manuallySetType: string;
    private glContext: WebGL2RenderingContext;
    private shaderString: string;
    private shaderImage: ShaderImage;
-   constructor(value, collection, glContext, manuallySetType = null) {
+   constructor(
+      value: any,
+      collection: ShaderVariableCollection,
+      glContext: WebGL2RenderingContext,
+      manuallySetType = null
+   ) {
       if (!this.cast(value)) {
          this.value = value;
          this.collection = collection;
@@ -737,7 +769,7 @@ class ShaderVariable {
       }
    }
 
-   cast(castFrom) {
+   cast(castFrom: ShaderVariable) {
       if (castFrom instanceof ShaderVariable) {
          this.value = castFrom.value;
          this.collection = castFrom.collection;
@@ -800,7 +832,7 @@ class ShaderVariable {
       return this.value;
    }
 
-   getShaderStringFromType(type) {
+   getShaderStringFromType(type: string) {
       switch (type) {
          case "vec4":
             return this.shaderImage.getShaderString();
@@ -826,7 +858,7 @@ class ShaderVariable {
       return this.shaderString;
    }
 
-   getShaderStringOfChannel(channel) {
+   getShaderStringOfChannel(channel: number) {
       if (this.isImage()) {
          return this.getShaderString() + "." + COLOR_CHANNELS[channel];
       } else {
@@ -845,7 +877,10 @@ class ShaderImage {
    private texture: WebGLTexture;
    private count: number;
 
-   constructor(jsImageObject, glContext) {
+   constructor(
+      jsImageObject: HTMLImageElement,
+      glContext: WebGL2RenderingContext
+   ) {
       this.jsImageObject = jsImageObject;
       this.glContext = glContext;
       this.imageVariable = UniqueVariable.getName("uniform");

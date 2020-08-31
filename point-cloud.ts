@@ -3,12 +3,12 @@
 class PointCloud {
    private normalMap: NormalMap;
    private depthFactor: number;
-   private colorPixelArray: Array<number>;
-   private dimensions: Array<number>;
-   private zValues: Array<number>;
+   private colorPixelArray: Uint8Array;
+   private dimensions: number[];
+   private zValues: number[];
    private objString: string;
 
-   constructor(normalMap, dimensions, depthFactor, colorPixelArray) {
+   constructor(normalMap: NormalMap, dimensions: number[], depthFactor: number, colorPixelArray: Uint8Array) {
       this.normalMap = normalMap;
       this.depthFactor = depthFactor;
       this.colorPixelArray = colorPixelArray;
@@ -17,7 +17,7 @@ class PointCloud {
       this.objString = null;
    }
 
-   downloadObj(filename) {
+   downloadObj(filename: string) {
       filename += ".obj";
 
       var element = document.createElement("a");
@@ -109,8 +109,8 @@ class PointCloud {
       const Z_FACTOR = this.depthFactor / 4;
       const GRADIENT_SHIFT = -255 / 2;
 
-      var zLineOffset;
-      var zLineOffsetI;
+      var zLineOffset: number;
+      var zLineOffsetI: number;
 
       for (var y = 0; y < this.dimensions[1]; y++) {
          zLineOffset = 0;
@@ -162,7 +162,7 @@ class PointCloud {
       }
    }
 
-   getNextPixelAndVector(currentPixel, currentVector, gradient) {
+   getNextPixelAndVector(currentPixel: any, currentVector: any, gradient: any[]) {
       var nextPixel = currentPixel;
       var nextVector = currentVector;
       while (nextPixel == currentPixel) {
@@ -173,7 +173,7 @@ class PointCloud {
       return [nextPixel, nextVector];
    }
 
-   isPixelIsInDimensions(pixel) {
+   isPixelIsInDimensions(pixel: number[]) {
       if (isNaN(pixel[0]) || isNaN(pixel[0])) {
          return false;
       }
@@ -196,7 +196,7 @@ class PointCloud {
       return [Math.cos(radians), Math.sin(radians)];
    }*/
 
-   getFrontalDegreeFromSphericalDegree(sphericalDegree) {
+   getFrontalDegreeFromSphericalDegree(sphericalDegree: number) {
       switch (sphericalDegree) {
          case NORTH:
             return 0;

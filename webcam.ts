@@ -11,9 +11,9 @@ class Webcam {
    private canvas: HTMLCanvasElement;
    private context: CanvasRenderingContext2D;
    private videoElem: HTMLVideoElement;
-   private stream;
+   private stream: MediaStream;
 
-   constructor(resolution, onReadyCallback) {
+   constructor(resolution: number[], onReadyCallback: TimerHandler) {
       this.streaming = false;
       this.width = resolution[0];
       this.height = resolution[1];

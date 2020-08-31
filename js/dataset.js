@@ -17,9 +17,6 @@ class Dataset {
         }
         return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
     }
-    getDataInput() {
-        return this.dataInput;
-    }
     getType() {
         return this.type;
     }
@@ -95,9 +92,6 @@ class DataInput {
     inputImage(lightingDegree, image) {
         this.dataset.setImage(lightingDegree, image);
     }
-    getType() {
-        return this.type;
-    }
 }
 class DropInput {
     constructor(dataInput, lightingDegrees, droppedFiles, droppedDataLoadedCallback) {
@@ -107,15 +101,6 @@ class DropInput {
         this.droppedFiles = droppedFiles;
         this.imagesLoaded = 0;
         this.loadAllImages();
-    }
-    getObjectName() {
-        var objectName = [];
-        const split = this.droppedFiles[0].name.split(".")[0].split("_");
-        for (var i = 1; i < split.length; i++) {
-            objectName.push(split[i]);
-        }
-        console.log(objectName.join("_"));
-        return objectName.join("_");
     }
     loadAllImages() {
         console.log("Loading " + this.droppedFiles.length + " images for cpu.");
@@ -135,20 +120,15 @@ class DropInput {
         }
     }
     readerLoaded(reader, imageDegree) {
-        //TODO: Beautify
-        var listener;
-        listener = this.readerLoaded;
-        reader.removeEventListener("load", listener);
+        //reader.removeEventListener("load", this.readerLoaded);
         var image = new Image();
         image.addEventListener("load", this.imageLoaded.bind(this, image, imageDegree));
-        //TODO: Beautify
-        var readerResult;
-        readerResult = reader.result;
-        image.src = readerResult;
+        const readerResult = reader.result;
+        image.src = String(readerResult);
     }
     imageLoaded(image, imageDegree) {
         this.imagesLoaded++;
-        image.removeEventListener("load", this.imageLoaded);
+        image.removeEventListener("load", this.imageLoaded.bind(this));
         this.dataInput.inputImage(imageDegree, image);
         if (this.imagesLoaded == this.lightingDegrees.length) {
             setTimeout(this.droppedDataLoadedCallback, 0);
@@ -169,12 +149,6 @@ class WebcamInput {
         this.noLightImageObject = null;
         this.webcam.startStreaming();
     }
-    getObjectName() {
-        return "webcam";
-    }
-    isReadyToCapture() {
-        return this.webcam.isReady();
-    }
     getNextLightingDegreeIndex() {
         for (var i = 0; i < this.lightingDegrees.length; i++) {
             if (this.imageDataList[i] == null) {
@@ -182,26 +156,6 @@ class WebcamInput {
             }
         }
         return null;
-    }
-    getImage(lightingDegree) {
-        for (var i = 0; i < this.lightingDegrees.length; i++) {
-            if (this.lightingDegrees[i] == lightingDegree) {
-                return this.jsImageObjectList[i];
-            }
-        }
-        if (lightingDegree === null) {
-            return this.noLightImageObject;
-        }
-    }
-    getImageData(lightingDegree) {
-        for (var i = 0; i < this.lightingDegrees.length; i++) {
-            if (this.lightingDegrees[i] == lightingDegree) {
-                return this.imageDataList[i];
-            }
-        }
-        if (lightingDegree === null) {
-            return this.noLightImageData;
-        }
     }
     setImageData(lightingDegree, imageData) {
         for (var i = 0; i < this.lightingDegrees.length; i++) {

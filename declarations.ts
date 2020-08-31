@@ -89,8 +89,8 @@ const WEBCAM_RESOLUTION = [800, 600];
 The float precision used on the gpu. Set to medium when facing errors.
 */
 const enum GPU_GL_FLOAT_PRECISION {
-   MEDIUM = "mediump",
-   HIGH = "highp",
+   MEDIUM = "medium" + "p",
+   HIGH = "high" + "p",
 }
 const GPU_PRECISION = GPU_GL_FLOAT_PRECISION.HIGH;
 

@@ -29,7 +29,7 @@ function calculateNormalMap() {
    normalMap.calculate(calculatePointCloud.bind(null, normalMap));
 }
 
-function calculatePointCloud(normalMap) {
+function calculatePointCloud(normalMap: NormalMap) {
    NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());
    const pointCloud = new PointCloud(
       normalMap,
@@ -51,11 +51,11 @@ function calculatePointCloud(normalMap) {
    console.log("finished.");
 }
 
-function downloadNormalMap(normalMap) {
+function downloadNormalMap(normalMap: NormalMap) {
    normalMap.downloadAsImage(dataset.getObjectName() + "_" + NORMAL_MAP_SUFFIX);
 }
 
-function downloadPointCloud(pointCloud) {
+function downloadPointCloud(pointCloud: PointCloud) {
    pointCloud.downloadObj(dataset.getObjectName() + "_" + POINT_CLOUD_SUFFIX);
 }
 
