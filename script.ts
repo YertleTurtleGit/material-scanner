@@ -1,7 +1,9 @@
 "use strict";
 
 document.getElementById("image-names").innerHTML =
-   '"' + IMAGE_NAMES.join('_{OBJECT_NAME}", "') + '_{OBJECT_NAME}"';
+   "{object name}_{azimuthal angle}_{polar_angle}.ext" +
+   "<br />" +
+   "e.g. testObject_000_000.png";
 
 const dataset = new Dataset(LIGHTING_DEGREES, allImagesLoaded);
 dataset.listenForDrop(INPUT_DROP_AREA);
