@@ -1,13 +1,18 @@
 "use strict";
 
 document.getElementById("image-names").innerHTML =
-   '"' + IMAGE_NAMES.join('_{OBJECT_NAME}", "') + '_{OBJECT_NAME}"';
+   "{object name}_{azimuthal angle}_{polar_angle}.ext" +
+   "<br />" +
+   "e.g. testObject_000_000.png";
 
-const dataset = new Dataset(LIGHTING_DEGREES, INPUT_DROP_AREA, allImagesLoaded);
+const dataset = new Dataset(LIGHTING_DEGREES, allImagesLoaded);
+dataset.listenForDrop(INPUT_DROP_AREA);
+dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 
 function allImagesLoaded() {
-   WIDTH = dataset.getImage(NORTH).width;
-   HEIGHT = dataset.getImage(NORTH).height;
+   INPUT_DROP_AREA.remove();
+   WIDTH = dataset.getImageDimensions()[0];
+   HEIGHT = dataset.getImageDimensions()[1];
    startCalculation();
 }
 
@@ -26,7 +31,7 @@ function calculateNormalMap() {
    normalMap.calculate(calculatePointCloud.bind(null, normalMap));
 }
 
-function calculatePointCloud(normalMap) {
+function calculatePointCloud(normalMap: NormalMap) {
    NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());
    const pointCloud = new PointCloud(
       normalMap,
@@ -48,11 +53,11 @@ function calculatePointCloud(normalMap) {
    console.log("finished.");
 }
 
-function downloadNormalMap(normalMap) {
+function downloadNormalMap(normalMap: NormalMap) {
    normalMap.downloadAsImage(dataset.getObjectName() + "_" + NORMAL_MAP_SUFFIX);
 }
 
-function downloadPointCloud(pointCloud) {
+function downloadPointCloud(pointCloud: PointCloud) {
    pointCloud.downloadObj(dataset.getObjectName() + "_" + POINT_CLOUD_SUFFIX);
 }
 
