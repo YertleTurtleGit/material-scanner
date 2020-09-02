@@ -81,6 +81,15 @@ class Dataset {
         console.warn("Not found lighting angle in dataset to get image.");
         return null;
     }
+    getPolarAngle(lightingAngle) {
+        for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+            if (this.lightingCoordinates[i].getAzimuthalAngle() === lightingAngle) {
+                return this.lightingCoordinates[i].getPolarAngle();
+            }
+        }
+        console.warn("Not found lighting angle in dataset to get image.");
+        return null;
+    }
     getObjectName() {
         return this.dataInput.getObjectName();
     }

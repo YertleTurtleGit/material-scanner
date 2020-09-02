@@ -16,6 +16,10 @@ class ImageCalc {
     divide(dividend, divisor) {
         return this.calculate(dividend, divisor, "/");
     }
+    sin(value) {
+    }
+    cos(value) {
+    }
     max(comparable1, comparable2) {
         return this.calculate(comparable1, comparable2, "max");
     }
@@ -73,6 +77,7 @@ class ImageShaderConstructor {
         this.shaderVariableCollection = new ShaderVariableCollection();
     }
     purge() {
+        console.log("Purging connection to gpu.");
         this.glContext.getExtension("WEBGL_lose_context").loseContext();
     }
     getResultJsImageObject(onloadCallback) {

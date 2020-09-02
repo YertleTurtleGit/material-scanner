@@ -148,4 +148,36 @@ class NormalMap {
 
       ic.purge();
    }
+
+   private getLights(
+      originAzimuthalAngle: number,
+      orthogonalAzimuthalAngle: number,
+      oppositeAzimuthalAngle: number
+   ) {
+      const originLightDir = this.getLightDirectionVector(originAzimuthalAngle);
+      const orthogonalLightDir = this.getLightDirectionVector(
+         orthogonalAzimuthalAngle
+      );
+      const oppositeLightDir = this.getLightDirectionVector(
+         oppositeAzimuthalAngle
+      );
+
+      return new Matrix3x3([
+         [originLightDir.x, originLightDir.y, originLightDir.z],
+         [orthogonalLightDir.x, orthogonalLightDir.y, orthogonalLightDir.z],
+         [oppositeLightDir.x, oppositeLightDir.y, oppositeLightDir.z],
+      ]).inverse();
+   }
+
+   private getLightDirectionVector(azimuthalAngle: number) {
+      var polarAngle = this.dataset.getPolarAngle(azimuthalAngle);
+      azimuthalAngle *= (2 * Math.PI) / 360;
+      polarAngle *= (2 * Math.PI) / 360;
+
+      return new Vector3(
+         Math.sin(polarAngle) * Math.cos(azimuthalAngle),
+         Math.sin(polarAngle) * Math.sin(azimuthalAngle),
+         Math.cos(polarAngle)
+      );
+   }
 }

@@ -30,6 +30,14 @@ class ImageCalc {
       return this.calculate(dividend, divisor, "/");
    }
 
+   public sin(value: HTMLImageElement|ShaderVariable) {
+
+   }
+
+   public cos(value: HTMLImageElement|ShaderVariable) {
+      
+   }
+
    public max(
       comparable1: HTMLImageElement | ShaderVariable,
       comparable2: HTMLImageElement | ShaderVariable
@@ -152,6 +160,7 @@ class ImageShaderConstructor {
    }
 
    public purge() {
+      console.log("Purging connection to gpu.");
       this.glContext.getExtension("WEBGL_lose_context").loseContext();
    }
 
