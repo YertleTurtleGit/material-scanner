@@ -42,7 +42,7 @@ to fit the relation to x- and y-coordinates.
 */
 const DEPTH_FACTOR = 0.025;
 /*
-The point cloud quality describes the amount of used data.
+The point cloud sampling rate describes the amount of data used.
 When set to 100, the point cloud vertex count equals to image pixel count.
 */
 const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;

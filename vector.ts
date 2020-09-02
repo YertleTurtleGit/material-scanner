@@ -29,7 +29,17 @@ class Matrix3x3 {
       this.matrix = matrix;
    }
 
-   public get(row: number, column: number) {
+   public getAsArray() {
+      var matrixArray = [];
+      for (var y = 0; y < this.matrix.length; y++) {
+         for (var x = 0; x < this.matrix[0].length; x++) {
+            matrixArray.push(this.matrix[x][y]);
+         }
+      }
+      return matrixArray;
+   }
+
+   public getValue(row: number, column: number) {
       return this.matrix[row][column];
    }
 

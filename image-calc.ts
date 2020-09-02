@@ -30,14 +30,6 @@ class ImageCalc {
       return this.calculate(dividend, divisor, "/");
    }
 
-   public sin(value: HTMLImageElement|ShaderVariable) {
-
-   }
-
-   public cos(value: HTMLImageElement|ShaderVariable) {
-      
-   }
-
    public max(
       comparable1: HTMLImageElement | ShaderVariable,
       comparable2: HTMLImageElement | ShaderVariable
@@ -59,7 +51,15 @@ class ImageCalc {
       return this.calculate(image, channelChar, ".");
    }
 
-   sieve(
+   public declareVariable() {
+      return this.imageShaderConstructor.addUniform();
+   }
+
+   public setVariable(variable: ShaderUniform, newValue: Matrix3x3) {
+      variable.setValue(newValue);
+   }
+
+   public sieve(
       image1: any,
       factor1: any,
       conditionOperator: any,
@@ -106,6 +106,10 @@ class ImageCalc {
       return this.imageShaderConstructor.getResultAsDataUrl();
    }
 
+   public compile() {
+      this.imageShaderConstructor.compileShaderProgram();
+   }
+
    public purge() {
       this.imageShaderConstructor.purge();
    }
@@ -121,6 +125,7 @@ class ImageShaderConstructor {
    private floatPrecision: GPU_GL_FLOAT_PRECISION;
    private calculations: ShaderCalculation[];
    private sieves: ShaderSieve[];
+   private uniforms: ShaderUniform[];
    private shaderProgram: WebGLProgram;
    private result: any[];
    private resultImage: HTMLImageElement;
@@ -139,6 +144,7 @@ class ImageShaderConstructor {
       this.floatPrecision = floatPrecision;
       this.calculations = [];
       this.sieves = [];
+      this.uniforms = [];
       this.shaderProgram = null;
       this.result = [null, null, null];
 
@@ -283,6 +289,12 @@ class ImageShaderConstructor {
       this.shaderRun = true;
    }
 
+   public compileShaderProgram() {
+      for (var i = 0; this.uniforms.length; i++) {
+         this.uniforms[i].setShaderProgram(this.getShaderProgram());
+      }
+   }
+
    private getShaderProgram() {
       if (this.shaderProgram == null) {
          var vertexShader = this.glContext.createShader(
@@ -383,6 +395,12 @@ class ImageShaderConstructor {
       return sieve.getResult();
    }
 
+   public addUniform(value: Matrix3x3) {
+      const uniform = new ShaderUniform(this.glContext);
+      this.uniforms.push(uniform);
+      return uniform;
+   }
+
    private getVertexShaderSource() {
       return [
          "#version 300 es",
@@ -445,6 +463,12 @@ class ImageShaderConstructor {
                   .getShaderImages()
                   [i].getUniformVariable() +
                ";"
+         );
+      }
+
+      for (var i = 0; i < this.uniforms.length; i++) {
+         uniformDeclarationsSource.push(
+            this.uniforms[i].getDeclarationShaderString()
          );
       }
       return uniformDeclarationsSource.join("\n");
@@ -958,6 +982,60 @@ class ShaderImage {
 
    getShaderString() {
       return this.getColorVariable();
+   }
+}
+
+class ShaderUniform {
+   /*
+   ONLY WORKS FOR MAT3!
+   */
+
+   private glContext: WebGL2RenderingContext;
+   private value: Matrix3x3;
+   private uniformPointer: WebGLUniformLocation;
+   private uniformName: string;
+
+   constructor(glContext: WebGL2RenderingContext) {
+      this.value = null;
+      this.uniformName = UniqueVariable.getName("uniform");
+   }
+
+   public setValue(value: Matrix3x3) {
+      if (this.uniformPointer === null) {
+         console.warn("Compile shader before setting uniform.");
+      } else {
+         this.glContext.uniformMatrix3fv(
+            this.uniformPointer,
+            false,
+            new Float32Array(value.getAsArray())
+         );
+         this.value = value;
+      }
+   }
+
+   public setShaderProgram(shaderProgram: WebGLProgram) {
+      this.uniformPointer = this.glContext.getUniformLocation(
+         shaderProgram,
+         this.uniformName
+      );
+   }
+
+   public getTypeShaderString() {
+      return "mat3";
+   }
+
+   public getShaderString() {
+      return this.uniformName;
+   }
+
+   public getDeclarationShaderString() {
+      return (
+         "uniform " +
+         this.getTypeShaderString() +
+         " " +
+         this.getShaderString() +
+         ";"
+      );
    }
 }
 

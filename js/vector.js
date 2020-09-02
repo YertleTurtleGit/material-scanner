@@ -10,7 +10,16 @@ class Matrix3x3 {
     constructor(matrix) {
         this.matrix = matrix;
     }
-    get(row, column) {
+    getAsArray() {
+        var matrixArray = [];
+        for (var y = 0; y < this.matrix.length; y++) {
+            for (var x = 0; x < this.matrix[0].length; x++) {
+                matrixArray.push(this.matrix[x][y]);
+            }
+        }
+        return matrixArray;
+    }
+    getValue(row, column) {
         return this.matrix[row][column];
     }
     inverse() {

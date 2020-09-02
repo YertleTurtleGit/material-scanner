@@ -16,10 +16,6 @@ class ImageCalc {
     divide(dividend, divisor) {
         return this.calculate(dividend, divisor, "/");
     }
-    sin(value) {
-    }
-    cos(value) {
-    }
     max(comparable1, comparable2) {
         return this.calculate(comparable1, comparable2, "max");
     }
@@ -28,6 +24,12 @@ class ImageCalc {
     }
     getChannel(image, channelChar) {
         return this.calculate(image, channelChar, ".");
+    }
+    declareVariable() {
+        return this.imageShaderConstructor.addUniform();
+    }
+    setVariable(variable, newValue) {
+        variable.setValue(newValue);
     }
     sieve(image1, factor1, conditionOperator, image2, factor2) {
         return this.imageShaderConstructor.addSieve(image1, factor1, conditionOperator, image2, factor2);
@@ -53,6 +55,9 @@ class ImageCalc {
     getResultAsDataUrl() {
         return this.imageShaderConstructor.getResultAsDataUrl();
     }
+    compile() {
+        this.imageShaderConstructor.compileShaderProgram();
+    }
     purge() {
         this.imageShaderConstructor.purge();
     }
@@ -62,6 +67,7 @@ class ImageShaderConstructor {
         this.floatPrecision = floatPrecision;
         this.calculations = [];
         this.sieves = [];
+        this.uniforms = [];
         this.shaderProgram = null;
         this.result = [null, null, null];
         this.resultImage = null;
@@ -139,6 +145,11 @@ class ImageShaderConstructor {
         this.glContext.finish();
         this.shaderRun = true;
     }
+    compileShaderProgram() {
+        for (var i = 0; this.uniforms.length; i++) {
+            this.uniforms[i].setShaderProgram(this.getShaderProgram());
+        }
+    }
     getShaderProgram() {
         if (this.shaderProgram == null) {
             var vertexShader = this.glContext.createShader(this.glContext.VERTEX_SHADER);
@@ -181,6 +192,11 @@ class ImageShaderConstructor {
         var sieve = new ShaderSieve(image1, factor1, conditionOperator, image2, factor2, this.shaderVariableCollection, this.glContext);
         this.sieves.push(sieve);
         return sieve.getResult();
+    }
+    addUniform(value) {
+        const uniform = new ShaderUniform(this.glContext);
+        this.uniforms.push(uniform);
+        return uniform;
     }
     getVertexShaderSource() {
         return [
@@ -234,6 +250,9 @@ class ImageShaderConstructor {
                 this.shaderVariableCollection
                     .getShaderImages()[i].getUniformVariable() +
                 ";");
+        }
+        for (var i = 0; i < this.uniforms.length; i++) {
+            uniformDeclarationsSource.push(this.uniforms[i].getDeclarationShaderString());
         }
         return uniformDeclarationsSource.join("\n");
     }
@@ -569,6 +588,37 @@ class ShaderImage {
     }
 }
 ShaderImage.count = 0;
+class ShaderUniform {
+    constructor(glContext) {
+        this.value = null;
+        this.uniformName = UniqueVariable.getName("uniform");
+    }
+    setValue(value) {
+        if (this.uniformPointer === null) {
+            console.warn("Compile shader before setting uniform.");
+        }
+        else {
+            this.glContext.uniformMatrix3fv(this.uniformPointer, false, new Float32Array(value.getAsArray()));
+            this.value = value;
+        }
+    }
+    setShaderProgram(shaderProgram) {
+        this.uniformPointer = this.glContext.getUniformLocation(shaderProgram, this.uniformName);
+    }
+    getTypeShaderString() {
+        return "mat3";
+    }
+    getShaderString() {
+        return this.uniformName;
+    }
+    getDeclarationShaderString() {
+        return ("uniform " +
+            this.getTypeShaderString() +
+            " " +
+            this.getShaderString() +
+            ";");
+    }
+}
 class UniqueVariable {
     static get uniqueNumber() {
         return UniqueVariable.uniqueImageNumber;
