@@ -19,7 +19,7 @@ class SphericalCoordinate {
         this.polarAngle = this.normalizeAngle(this.polarAngle);
     }
     normalizeAngle(angle) {
-        while (angle > 360) {
+        while (angle >= 360) {
             angle -= 360;
         }
         while (angle < 0) {

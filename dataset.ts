@@ -6,20 +6,42 @@ const enum DATATYPE {
 }
 
 class Dataset {
-   private lightingDegrees: number[];
+   private lightingAzimuthalAngles: number[];
+   private lightingCoordinates: SphericalCoordinate[];
    private dataLoadedCallback: TimerHandler;
    private jsImageObjects: (HTMLImageElement | ShaderVariable)[];
    private noLightImageObject: HTMLImageElement;
    private dataInput: DataInput;
    private type: DATATYPE;
 
-   constructor(lightingDegrees: number[], dataLoadedCallback: TimerHandler) {
-      this.lightingDegrees = lightingDegrees;
+   constructor(
+      lightingAzimuthalAngles: number[],
+      dataLoadedCallback: TimerHandler
+   ) {
+      this.lightingAzimuthalAngles = lightingAzimuthalAngles;
+      this.lightingCoordinates = null;
       this.dataLoadedCallback = dataLoadedCallback;
-      this.jsImageObjects = new Array(lightingDegrees.length).fill(null);
+      this.jsImageObjects = new Array(lightingAzimuthalAngles.length).fill(
+         null
+      );
       this.noLightImageObject = null;
       this.dataInput = null;
       this.type = null;
+   }
+
+   public getLightingCoordinates(polarAngle: number) {
+      if (this.lightingCoordinates === null) {
+         this.lightingCoordinates = [];
+         for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+            this.lightingCoordinates.push(
+               new SphericalCoordinate(
+                  this.lightingAzimuthalAngles[i],
+                  polarAngle
+               )
+            );
+         }
+      }
+      return this.lightingCoordinates;
    }
 
    public getImageDimensions() {
@@ -60,9 +82,9 @@ class Dataset {
       this.dataInput.setInputClass(
          new DropInput(
             this.dataInput,
-            this.lightingDegrees,
             eventObject.dataTransfer.files,
-            this.dataLoaded.bind(this)
+            this.dataLoaded.bind(this),
+            this
          )
       );
 
@@ -87,42 +109,51 @@ class Dataset {
 
    private webcamButtonClicked(webcamResolution: number[]) {
       this.type = DATATYPE.WEBCAM;
+      this.getLightingCoordinates(WEBCAM_POLAR_ANGLE);
       this.dataInput = new DataInput(this);
 
       this.dataInput.setInputClass(
          new WebcamInput(
             this.dataInput,
             webcamResolution,
-            this.lightingDegrees,
+            this.lightingCoordinates,
             this.dataLoaded.bind(this)
          )
       );
    }
 
-   public setImage(lightingDegree: number, jsImageObject: HTMLImageElement) {
-      for (var i = 0; i < this.lightingDegrees.length; i++) {
-         if (this.lightingDegrees[i] == lightingDegree) {
+   public setImage(
+      lightingCoordinate: SphericalCoordinate,
+      jsImageObject: HTMLImageElement
+   ) {
+      for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+         if (
+            this.lightingAzimuthalAngles[i] ===
+            lightingCoordinate.getAzimuthalAngle()
+         ) {
             this.jsImageObjects[i] = jsImageObject;
             return;
          }
       }
-      if (lightingDegree === null) {
+      if (lightingCoordinate === null) {
          this.noLightImageObject = jsImageObject;
       }
-      console.warn("Not found lighting degree in dataset to set image.");
+      console.warn("Not found lighting angle in dataset to set image.");
    }
 
-   public getImage(lightingDegree: number) {
-      for (var i = 0; i < this.lightingDegrees.length; i++) {
-         if (this.lightingDegrees[i] === lightingDegree) {
+   public getImage(lightingAngle: number) {
+      for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+         if (
+            this.lightingCoordinates[i].getAzimuthalAngle() === lightingAngle
+         ) {
             return this.jsImageObjects[i];
          }
       }
-      if (lightingDegree === null) {
+      if (lightingAngle === null) {
          return this.noLightImageObject;
       }
 
-      console.warn("Not found lighting degree in dataset to get image.");
+      console.warn("Not found lighting angle in dataset to get image.");
       return null;
    }
 
@@ -155,29 +186,34 @@ class DataInput {
       this.inputClass = inputClass;
    }
 
-   public inputImage(lightingDegree: number, image: HTMLImageElement) {
-      this.dataset.setImage(lightingDegree, image);
+   public inputImage(
+      lightingCoordinate: SphericalCoordinate,
+      image: HTMLImageElement
+   ) {
+      this.dataset.setImage(lightingCoordinate, image);
    }
 }
 
 class DropInput {
    private dataInput: DataInput;
-   private lightingDegrees: number[];
+   private lightingCoordinates: SphericalCoordinate[];
    private droppedDataLoadedCallback: TimerHandler;
    private droppedFiles: FileList;
    private imagesLoaded: number;
+   private dataset: Dataset;
 
    constructor(
       dataInput: DataInput,
-      lightingDegrees: number[],
       droppedFiles: FileList,
-      droppedDataLoadedCallback: TimerHandler
+      droppedDataLoadedCallback: TimerHandler,
+      dataset: Dataset
    ) {
       this.dataInput = dataInput;
-      this.lightingDegrees = lightingDegrees;
+      this.lightingCoordinates = null;
 
       this.droppedDataLoadedCallback = droppedDataLoadedCallback;
       this.droppedFiles = droppedFiles;
+      this.dataset = dataset;
 
       this.imagesLoaded = 0;
       this.loadAllImages();
@@ -186,13 +222,28 @@ class DropInput {
    private loadAllImages() {
       console.log("Loading " + this.droppedFiles.length + " images for cpu.");
 
+      const fileNameGlobal: string = this.droppedFiles[0].name.split(".")[0];
+      const polarAngleGlobal: number = Number(fileNameGlobal.split("_", 2)[2]);
+
+      this.lightingCoordinates = this.dataset.getLightingCoordinates(
+         polarAngleGlobal
+      );
+
       for (var i = 0; i < this.droppedFiles.length; i++) {
-         const fileName = this.droppedFiles[i].name.split(".")[0];
-         const imageDegree = fileName.split("_", 1)[0];
+         const fileName: string = this.droppedFiles[i].name.split(".")[0];
+
+         const azimuthalAngle: number = Number(fileName.split("_", 2)[1]);
+         const polarAngle: number = Number(fileName.split("_", 2)[2]);
+
+         const imageDegree = new SphericalCoordinate(
+            azimuthalAngle,
+            polarAngle
+         );
+
          const fileType = this.droppedFiles[i].type;
 
          if (
-            IMAGE_NAMES.includes(imageDegree) &&
+            LIGHTING_AZIMUTHAL_ANGLES.includes(azimuthalAngle) &&
             fileType.startsWith("image")
          ) {
             var reader = new FileReader();
@@ -207,7 +258,7 @@ class DropInput {
       }
    }
 
-   private readerLoaded(reader: FileReader, imageDegree: number) {
+   private readerLoaded(reader: FileReader, imageDegree: SphericalCoordinate) {
       //reader.removeEventListener("load", this.readerLoaded);
       var image = new Image();
       image.addEventListener(
@@ -219,11 +270,14 @@ class DropInput {
       image.src = String(readerResult);
    }
 
-   private imageLoaded(image: HTMLImageElement, imageDegree: number) {
+   private imageLoaded(
+      image: HTMLImageElement,
+      imageDegree: SphericalCoordinate
+   ) {
       this.imagesLoaded++;
       image.removeEventListener("load", this.imageLoaded.bind(this));
       this.dataInput.inputImage(imageDegree, image);
-      if (this.imagesLoaded == this.lightingDegrees.length) {
+      if (this.imagesLoaded == this.lightingCoordinates.length) {
          setTimeout(this.droppedDataLoadedCallback, 0);
       }
    }
@@ -236,7 +290,7 @@ class WebcamInput {
    private dataLoadedCallback: TimerHandler;
    private imageDataList: string[];
    private jsImageObjectList: HTMLImageElement[];
-   private lightingDegrees: number[];
+   private lightingCoordinates: SphericalCoordinate[];
    private loadedImages: number;
    private noLightImageData: string;
    private noLightImageObject: HTMLImageElement;
@@ -244,7 +298,7 @@ class WebcamInput {
    constructor(
       dataInput: DataInput,
       resolution: number[],
-      lightingDegrees: number[],
+      lightingCoordinates: SphericalCoordinate[],
       dataLoadedCallback: TimerHandler
    ) {
       this.dataInput = dataInput;
@@ -252,17 +306,17 @@ class WebcamInput {
       this.webcam = new Webcam(resolution, this.startCapture.bind(this));
       this.dataLoadedCallback = dataLoadedCallback;
 
-      this.imageDataList = Array(lightingDegrees.length).fill(null);
-      this.jsImageObjectList = Array(lightingDegrees.length).fill(null);
-      this.lightingDegrees = lightingDegrees;
+      this.imageDataList = Array(lightingCoordinates.length).fill(null);
+      this.jsImageObjectList = Array(lightingCoordinates.length).fill(null);
+      this.lightingCoordinates = lightingCoordinates;
       this.loadedImages = 0;
       this.noLightImageData = null;
       this.noLightImageObject = null;
       this.webcam.startStreaming();
    }
 
-   private getNextLightingDegreeIndex() {
-      for (var i = 0; i < this.lightingDegrees.length; i++) {
+   private getNextLightingAngleIndex() {
+      for (var i = 0; i < this.lightingCoordinates.length; i++) {
          if (this.imageDataList[i] == null) {
             return i;
          }
@@ -270,15 +324,18 @@ class WebcamInput {
       return null;
    }
 
-   private setImageData(lightingDegree: number, imageData: string) {
-      for (var i = 0; i < this.lightingDegrees.length; i++) {
-         if (this.lightingDegrees[i] == lightingDegree) {
+   private setImageData(
+      lightingCoordinate: SphericalCoordinate,
+      imageData: string
+   ) {
+      for (var i = 0; i < this.lightingCoordinates.length; i++) {
+         if (this.lightingCoordinates[i] == lightingCoordinate) {
             this.imageDataList[i] = imageData;
             this.capture();
             return i;
          }
       }
-      if (lightingDegree === null) {
+      if (lightingCoordinate === null) {
          this.noLightImageData = imageData;
          this.capture();
          return null;
@@ -288,31 +345,35 @@ class WebcamInput {
    public startCapture() {
       this.webcam.purgeDisplay();
       this.gradientLighting.display(
-         this.lightingDegrees[0],
-         this.singleCapture.bind(this, this.lightingDegrees[0])
+         this.lightingCoordinates[0].getAzimuthalAngle(),
+         this.singleCapture.bind(this, this.lightingCoordinates[0])
       );
    }
 
    private imageLoadedFromData(
       image: HTMLImageElement,
-      lightingDegree: number
+      lightingCoordinate: SphericalCoordinate
    ) {
-      console.log(lightingDegree + " image loaded.");
+      console.log(lightingCoordinate.getDisplayString() + " image loaded.");
       //image.removeEventListener("load", ev);
       this.loadedImages++;
-      this.dataInput.inputImage(lightingDegree, image);
-      if (this.loadedImages == this.lightingDegrees.length) {
+      this.dataInput.inputImage(lightingCoordinate, image);
+      if (this.loadedImages == this.lightingCoordinates.length) {
          console.log("All images from webcam loaded.");
          setTimeout(this.dataLoadedCallback, 0);
       }
    }
 
    private loadAllImagesFromData() {
-      for (var i = 0; i < this.lightingDegrees.length; i++) {
+      for (var i = 0; i < this.lightingCoordinates.length; i++) {
          const image = new Image();
          image.addEventListener(
             "load",
-            this.imageLoadedFromData.bind(this, image, this.lightingDegrees[i])
+            this.imageLoadedFromData.bind(
+               this,
+               image,
+               this.lightingCoordinates[i]
+            )
          );
          image.src = this.imageDataList[i];
       }
@@ -326,13 +387,15 @@ class WebcamInput {
    }
 
    private capture() {
-      var nextLightingDegreeIndex = this.getNextLightingDegreeIndex();
+      var nextLightingAngleIndex = this.getNextLightingAngleIndex();
 
-      if (nextLightingDegreeIndex != null) {
-         var lightingDegree = this.lightingDegrees[nextLightingDegreeIndex];
+      if (nextLightingAngleIndex != null) {
+         var lightingAngle = this.lightingCoordinates[
+            nextLightingAngleIndex
+         ].getAzimuthalAngle();
          this.gradientLighting.display(
-            lightingDegree,
-            this.singleCapture.bind(this, lightingDegree)
+            lightingAngle,
+            this.singleCapture.bind(this, lightingAngle)
          );
       } else if (this.noLightImageData === null) {
          this.gradientLighting.display(
@@ -346,12 +409,14 @@ class WebcamInput {
       }
    }
 
-   private singleCapture(lightingDegree: string) {
-      console.log("capture " + lightingDegree + " degree image.");
+   private singleCapture(lightingCoordinate: SphericalCoordinate) {
+      console.log(
+         "capture " + lightingCoordinate.getDisplayString() + " degree image."
+      );
       setTimeout(
          this.setImageData.bind(
             this,
-            lightingDegree,
+            lightingCoordinate,
             this.webcam.takePicture()
          ),
          1000

@@ -2,33 +2,14 @@
 
 /*
 Spherical Coordinates
-ISO 80000-2
 
-The polar angle is denoted by θ (theta):
-It is the angle between the z-axis and the radial vector
-connecting the origin to the point in question.
+The azimuthal angle is denoted by φ (phi).
+The polar angle is denoted by θ (theta).
 
-The azimuthal angle is denoted by φ (phi):
-It is the angle between the x-axis and the projection
-of the radial vector onto the xy-plane.
+In the following, the notation [φ, θ] is used.
 
-In the following, the notation [θ, φ] is used in arrays.
-
-Visualization in mathematical notation (switched θ and φ):
+Visualization in mathematical notation:
 https://www.geogebra.org/m/FzkZPN3K
-
-Source:
-https://en.wikipedia.org/wiki/Del_in_cylindrical_and_spherical_coordinates
-*/
-/*
-const EAST = [90, 90]; // 0° in 2d
-const NORTH_EAST = [45, 90]; // 45° in 2d
-const NORTH = [0, 0]; // 90° in 2d
-const NORTH_WEST = [45, 270]; // 135° in 2d
-const WEST = [90, 270]; // 180° in 2d
-const SOUTH_WEST = [135, 270]; // 225° in 2d
-const SOUTH = [180, 0]; // 270° in 2d
-const SOUTH_EAST = [135, 90]; // 315° in 2d
 */
 
 const EAST = 0;
@@ -42,9 +23,8 @@ const SOUTH_EAST = 315;
 
 /*
 The lighting degrees array describes all spherical degrees.
-They should be in the same order like the IMAGE_NAMES array.
 */
-const LIGHTING_DEGREES = [
+const LIGHTING_AZIMUTHAL_ANGLES = [
    EAST,
    NORTH_EAST,
    NORTH,
@@ -54,12 +34,6 @@ const LIGHTING_DEGREES = [
    SOUTH,
    SOUTH_EAST,
 ];
-
-/*
-The image names array is used for the input file names.
-They should be in the same order like the LIGHTING_DEGREES array.
-*/
-const IMAGE_NAMES = ["000", "045", "090", "135", "180", "225", "270", "315"];
 
 /*
 Suffixes for file names.
@@ -77,13 +51,14 @@ const DEPTH_FACTOR = 0.025;
 The point cloud quality describes the amount of used data.
 When set to 100, the point cloud vertex count equals to image pixel count.
 */
-//const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
-const POINT_CLOUD_SAMPLING_RATE_PERCENT = 100;
+const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
 
 /*
 The resolution used when capturing data with a webcam.
 */
 const WEBCAM_RESOLUTION = [800, 600];
+
+const WEBCAM_POLAR_ANGLE = 45;
 
 /*
 The float precision used on the gpu. Set to medium when facing errors.

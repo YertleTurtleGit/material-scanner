@@ -3,19 +3,14 @@ document.getElementById("image-names").innerHTML =
     "{object name}_{azimuthal angle}_{polar_angle}.ext" +
         "<br />" +
         "e.g. testObject_000_000.png";
-const dataset = new Dataset(LIGHTING_DEGREES, allImagesLoaded);
+const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, allImagesLoaded);
 dataset.listenForDrop(INPUT_DROP_AREA);
-dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
+//dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 function allImagesLoaded() {
     INPUT_DROP_AREA.remove();
     WIDTH = dataset.getImageDimensions()[0];
     HEIGHT = dataset.getImageDimensions()[1];
     startCalculation();
-}
-var log = [];
-function cLog(message) {
-    console.log(message);
-    log.push(message);
 }
 function startCalculation() {
     calculateNormalMap();
@@ -42,9 +37,9 @@ function downloadPointCloud(pointCloud) {
 }
 function getColorPixelArray() {
     var ic = new ImageCalc();
-    var maxImage = dataset.getImage(LIGHTING_DEGREES[0]);
-    for (var i = 1; i < LIGHTING_DEGREES.length; i++) {
-        maxImage = ic.max(maxImage, dataset.getImage(LIGHTING_DEGREES[i]));
+    var maxImage = dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[0]);
+    for (var i = 1; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+        maxImage = ic.max(maxImage, dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i]));
     }
     ic.setResult(maxImage);
     const colorPixelArray = ic.getResultAsPixelArray();

@@ -42,13 +42,13 @@ class NormalMap {
     }
     calculate(onloadCallback) {
         const ic = new ImageCalc(true);
-        var maxImage = this.dataset.getImage(LIGHTING_DEGREES[0]);
-        for (var i = 1; i < LIGHTING_DEGREES.length; i++) {
-            maxImage = ic.max(maxImage, this.dataset.getImage(LIGHTING_DEGREES[i]));
+        var maxImage = this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[0]);
+        for (var i = 1; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+            maxImage = ic.max(maxImage, this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i]));
         }
-        var minImage = this.dataset.getImage(LIGHTING_DEGREES[0]);
-        for (var i = 1; i < LIGHTING_DEGREES.length; i++) {
-            minImage = ic.min(minImage, this.dataset.getImage(LIGHTING_DEGREES[i]));
+        var minImage = this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[0]);
+        for (var i = 1; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+            minImage = ic.min(minImage, this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i]));
         }
         var all = maxImage;
         var front = ic.multiply(ic.divide(minImage, all), 1);
