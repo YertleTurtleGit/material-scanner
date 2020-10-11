@@ -34,8 +34,8 @@ const LIGHTING_AZIMUTHAL_ANGLES = [
 /*
 Suffixes for file names.
 */
-const NORMAL_MAP_SUFFIX = "normal-map";
-const POINT_CLOUD_SUFFIX = "point-cloud";
+const NORMAL_MAP_FILE_SUFFIX = "normal-map";
+const POINT_CLOUD_FILE_SUFFIX = "point-cloud";
 /*
 The depth factor describes a multiplicand of the z-coordinate
 to fit the relation to x- and y-coordinates.
@@ -43,7 +43,7 @@ to fit the relation to x- and y-coordinates.
 const DEPTH_FACTOR = 0.025;
 /*
 The point cloud sampling rate describes the amount of data used.
-When set to 100, the point cloud vertex count equals to image pixel count.
+When set to 100, the point cloud vertex count equates to the image pixel count.
 */
 const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
 /*
@@ -63,8 +63,9 @@ const INPUT_DROP_AREA = document.getElementById("input-drop-area");
 const LOADING_AREA = document.getElementById("loading-area");
 const OUTPUT_AREA = document.getElementById("output-area");
 const NORMAL_MAP_AREA = document.getElementById("normal-map");
-const POINT_CLOUD_BUTTON = document.getElementById("point-cloud-button");
 const NORMAL_MAP_BUTTON = document.getElementById("normal-map-button");
+const POINT_CLOUD_AREA = document.getElementById("point-cloud");
+const POINT_CLOUD_BUTTON = document.getElementById("point-cloud-button");
 const CAPTURE_BUTTON = document.getElementById("capture-button");
 const C_LOG = document.getElementById("c-log");
 /*
@@ -73,3 +74,13 @@ All images should have the same resolution.
 */
 var WIDTH;
 var HEIGHT;
+// TODO: Good logging.
+const LOG_ELEMENT = document.getElementById("current-task-info");
+LOG_ELEMENT.style.display = "none";
+var uiBaseLayer = 0;
+function uiLog(message, layer = uiBaseLayer) {
+    for (var i = 0; i < layer; i++) {
+        message = "- " + message;
+    }
+    console.log(message);
+}

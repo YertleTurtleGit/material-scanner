@@ -13,20 +13,25 @@ function allImagesLoaded() {
    INPUT_DROP_AREA.remove();
    WIDTH = dataset.getImageDimensions()[0];
    HEIGHT = dataset.getImageDimensions()[1];
-   startCalculation();
+   setTimeout(startCalculation, 0);
 }
 
 function startCalculation() {
-   calculateNormalMap();
+   uiLog("Calculating normal map.");
+   uiBaseLayer++;
+   calculateNormalMap(calculatePointCloud);
 }
 
-function calculateNormalMap() {
+function calculateNormalMap(onloadFunction) {
    const normalMap = new NormalMap(dataset);
-   normalMap.calculate(calculatePointCloud.bind(null, normalMap));
+   normalMap.calculate(onloadFunction.bind(null, normalMap));
 }
 
 function calculatePointCloud(normalMap: NormalMap) {
    NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());
+   uiBaseLayer--;
+   uiLog("Calculating point cloud.");
+   uiBaseLayer++;
    const pointCloud = new PointCloud(
       normalMap,
       [WIDTH, HEIGHT],
@@ -44,28 +49,34 @@ function calculatePointCloud(normalMap: NormalMap) {
    );
    LOADING_AREA.style.display = "none";
    OUTPUT_AREA.style.display = "grid";
-   console.log("finished.");
+   pointCloud.renderPreviewTo(POINT_CLOUD_AREA);
+   console.log("Finished.");
 }
 
 function downloadNormalMap(normalMap: NormalMap) {
-   normalMap.downloadAsImage(dataset.getObjectName() + "_" + NORMAL_MAP_SUFFIX);
+   normalMap.downloadAsImage(
+      dataset.getObjectName() + "_" + NORMAL_MAP_FILE_SUFFIX
+   );
 }
 
 function downloadPointCloud(pointCloud: PointCloud) {
-   pointCloud.downloadObj(dataset.getObjectName() + "_" + POINT_CLOUD_SUFFIX);
+   pointCloud.downloadObj(
+      dataset.getObjectName() + "_" + POINT_CLOUD_FILE_SUFFIX
+   );
 }
 
 function getColorPixelArray() {
+   uiLog("Calculating albedo.");
+   uiBaseLayer++;
    var ic = new ImageCalc();
-   var maxImage = dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[0]);
-   for (var i = 1; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
-      maxImage = ic.max(
-         maxImage,
-         dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i])
-      );
+   var images: GlslVariable[] = [];
+   for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+      images.push(ic.loadImage(dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i])));
    }
-   ic.setResult(maxImage);
-   const colorPixelArray = ic.getResultAsPixelArray();
+
+   const maxImage = ic.max(...images);
+
+   const colorPixelArray = ic.renderToPixelArray(maxImage);
    ic.purge();
    return colorPixelArray;
 }

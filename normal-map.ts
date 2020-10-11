@@ -5,19 +5,12 @@ class NormalMap {
    private jsImageObject: HTMLImageElement;
    private pixelArray: Uint8Array;
    private dataUrl: string;
-   private isLoaded: boolean;
 
    constructor(dataset: Dataset) {
       this.dataset = dataset;
       this.jsImageObject = null;
       this.pixelArray = null;
       this.dataUrl = null;
-      this.isLoaded = false;
-   }
-
-   loaded(onloadCallback: TimerHandler) {
-      this.isLoaded = true;
-      setTimeout(onloadCallback, 0);
    }
 
    downloadAsImage(fileName: string) {
@@ -35,63 +28,76 @@ class NormalMap {
    }
 
    getAsDataUrl() {
-      if (this.isLoaded) {
+      if (this.dataUrl !== null) {
          return this.dataUrl;
       }
+      console.warn("Call calculate first.");
+      return null;
    }
 
    getAsPixelArray() {
-      if (this.isLoaded) {
+      if (this.pixelArray !== null) {
          return this.pixelArray;
       }
-      console.warn("Call load first.");
+      console.warn("Call calculate first.");
       return null;
    }
 
    getAsJsImageObject() {
-      if (this.isLoaded) {
+      if (this.jsImageObject !== null) {
          return this.jsImageObject;
       }
-      console.warn("Call load first.");
+      console.warn("Call calculate first.");
       return null;
    }
 
-   calculate(onloadCallback: any) {
-      const ic = new ImageCalc(true);
+   calculate(onloadFunction) {
+      const ic = new ImageCalc();
 
-      var maxImage = this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[0]);
-      for (var i = 1; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
-         maxImage = ic.max(
-            maxImage,
-            this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i])
+      var images: GlslVariable[] = [];
+      for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+         images.push(
+            ic.loadImage(this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i]))
          );
       }
 
-      var minImage = this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[0]);
-      for (var i = 1; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
-         minImage = ic.min(
-            minImage,
-            this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i])
-         );
-      }
+      const maxImage = ic.max(...images);
+      const minImage = ic.min(...images);
 
       var all = maxImage;
-      var front = ic.multiply(ic.divide(minImage, all), 1);
+      //var front =ic.divide(minImage, all);
 
-      var north = this.dataset.getImage(NORTH);
-      var northeast = this.dataset.getImage(NORTH_EAST);
-      var east = this.dataset.getImage(EAST);
-      var southeast = this.dataset.getImage(SOUTH_EAST);
-      var south = this.dataset.getImage(SOUTH);
-      var southwest = this.dataset.getImage(SOUTH_WEST);
-      var west = this.dataset.getImage(WEST);
-      var northwest = this.dataset.getImage(NORTH_WEST);
+      var north = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH)]
+      );
+      var northeast = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH_EAST)]
+      );
+      var east = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(EAST)]
+      );
+      var southeast = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH_EAST)]
+      );
+      var south = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH)]
+      );
+      var southwest = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH_WEST)]
+      );
+      var west = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(WEST)]
+      );
+      var northwest = ic.getGrayscaleFloat(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH_WEST)]
+      );
 
-      const noLightImage = this.dataset.getImage(null);
-      const hasNoLightImage = noLightImage != null;
+      const hasNoLightImage = this.dataset.getImage(null) !== null;
+
       if (hasNoLightImage) {
+         const noLightImage = ic.loadImage(this.dataset.getImage(null));
          all = ic.substract(all, noLightImage);
-         front = ic.substract(front, noLightImage);
+         //front = ic.substract(front, noLightImage);
 
          north = ic.substract(north, noLightImage);
          northeast = ic.substract(northeast, noLightImage);
@@ -103,8 +109,6 @@ class NormalMap {
          northwest = ic.substract(northwest, noLightImage);
       }
 
-      //all = ic.multiply(all, all);
-
       north = ic.divide(north, all);
       northeast = ic.divide(northeast, all);
       east = ic.divide(east, all);
@@ -114,39 +118,94 @@ class NormalMap {
       west = ic.divide(west, all);
       northwest = ic.divide(northwest, all);
 
-      var red = ic.add(
-         ic.divide(ic.divide(east, west), 2),
-         ic.divide(
-            ic.add(
-               ic.divide(northeast, southwest),
-               ic.divide(southeast, northwest)
-            ),
-            8
-         )
+      const COMBINATIONS: [number, number, number][] = [
+         [WEST, NORTH, EAST],
+         [WEST, SOUTH, EAST],
+         [SOUTH, WEST, NORTH],
+         [SOUTH, EAST, NORTH],
+         [NORTH_WEST, NORTH_EAST, SOUTH_EAST],
+         [NORTH_WEST, SOUTH_WEST, SOUTH_EAST],
+         [NORTH_EAST, SOUTH_EAST, SOUTH_WEST],
+         [NORTH_EAST, NORTH_WEST, SOUTH_WEST],
+      ];
+
+      uiBaseLayer++;
+      uiLog("Calculating anisotropic reflection matrices.");
+      uiBaseLayer--;
+      var normalVectors: GlslVariable[] = [];
+      for (var i = 0; i < COMBINATIONS.length; i++) {
+         normalVectors.push(
+            this.getAnisotropicNormalMapVector(ic, images, ...COMBINATIONS[i])
+         );
+      }
+
+      var normalVector = ic.divide(
+         ic.add(...normalVectors),
+         ic.loadNumber(normalVectors.length)
       );
 
-      var green = ic.add(
-         ic.divide(ic.divide(north, south), 2),
-         ic.divide(
-            ic.add(
-               ic.divide(northeast, southwest),
-               ic.divide(northwest, southeast)
-            ),
-            8
-         )
+      const result = ic.getImageFromChannels(
+         ic.getChannelFromImage(normalVector, COLOR_CHANNEL.RED),
+         ic.getChannelFromImage(normalVector, COLOR_CHANNEL.GREEN),
+         ic.getChannelFromImage(normalVector, COLOR_CHANNEL.BLUE),
+         ic.loadNumber(1)
       );
 
-      var blue = front;
-
-      ic.setResultChannels([red, green, blue, 1]);
-      //ic.setResult(this.dataset.getImage(SOUTH));
-      this.pixelArray = ic.getResultAsPixelArray();
-      this.dataUrl = ic.getResultAsDataUrl();
-      this.jsImageObject = ic.getResultAsJsImageObject(
-         this.loaded.bind(this, onloadCallback)
-      );
+      this.pixelArray = ic.renderToPixelArray(result);
+      this.dataUrl = ic.renderToDataUrl(result);
+      this.jsImageObject = ic.renderToImage(result, onloadFunction);
 
       ic.purge();
+   }
+
+   private getAnisotropicNormalMapVector(
+      ic: ImageCalc,
+      images: GlslVariable[],
+      originAzimuthalAngle: number,
+      orthogonalAzimuthalAngle: number,
+      oppositeAzimuthalAngle: number
+   ) {
+      const lights = this.getLights(
+         originAzimuthalAngle,
+         orthogonalAzimuthalAngle,
+         oppositeAzimuthalAngle
+      ).matrix;
+
+      const reflectionR = ic.getChannelFromImage(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(originAzimuthalAngle)],
+         COLOR_CHANNEL.R
+      );
+
+      const reflectionG = ic.getChannelFromImage(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(orthogonalAzimuthalAngle)],
+         COLOR_CHANNEL.G
+      );
+
+      const reflectionB = ic.getChannelFromImage(
+         images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(oppositeAzimuthalAngle)],
+         COLOR_CHANNEL.B
+      );
+
+      const red = ic.add(
+         ic.multiply(reflectionR, ic.loadNumber(lights[0][0])),
+         ic.multiply(reflectionR, ic.loadNumber(lights[0][1])),
+         ic.multiply(reflectionR, ic.loadNumber(lights[0][2]))
+      );
+
+      const green = ic.add(
+         ic.multiply(reflectionG, ic.loadNumber(lights[1][0])),
+         ic.multiply(reflectionG, ic.loadNumber(lights[1][1])),
+         ic.multiply(reflectionG, ic.loadNumber(lights[1][2]))
+      );
+
+      const blue = ic.add(
+         ic.multiply(reflectionB, ic.loadNumber(lights[2][0])),
+         ic.multiply(reflectionB, ic.loadNumber(lights[2][1])),
+         ic.multiply(reflectionB, ic.loadNumber(lights[2][2]))
+      );
+
+      console.warn("Check if normalizing is essential.");
+      return ic.getImageFromChannels(red, green, blue, ic.loadNumber(1));
    }
 
    private getLights(
@@ -171,13 +230,22 @@ class NormalMap {
 
    private getLightDirectionVector(azimuthalAngle: number) {
       var polarAngle = this.dataset.getPolarAngle(azimuthalAngle);
-      azimuthalAngle *= (2 * Math.PI) / 360;
-      polarAngle *= (2 * Math.PI) / 360;
 
-      return new Vector3(
+      if (polarAngle < 0 || azimuthalAngle < 0) {
+         console.warn("Light direction vector is invalid!");
+      }
+
+      azimuthalAngle = (azimuthalAngle * 2 * Math.PI) / 360;
+      polarAngle = (polarAngle * 2 * Math.PI) / 360;
+
+      var light = new Vector3(
          Math.sin(polarAngle) * Math.cos(azimuthalAngle),
          Math.sin(polarAngle) * Math.sin(azimuthalAngle),
          Math.cos(polarAngle)
       );
+
+      var lightDirection = light.normalize();
+
+      return lightDirection;
    }
 }

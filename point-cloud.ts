@@ -8,7 +8,15 @@ class PointCloud {
    private zValues: number[];
    private objString: string;
 
-   constructor(normalMap: NormalMap, dimensions: number[], depthFactor: number, colorPixelArray: Uint8Array) {
+   private gpuVertices: number[];
+   private gpuVertexColors: number[];
+
+   constructor(
+      normalMap: NormalMap,
+      dimensions: number[],
+      depthFactor: number,
+      colorPixelArray: Uint8Array
+   ) {
       this.normalMap = normalMap;
       this.depthFactor = depthFactor;
       this.colorPixelArray = colorPixelArray;
@@ -41,9 +49,13 @@ class PointCloud {
 
    getAsObjString() {
       if (this.objString == null) {
+         this.gpuVertices = [];
+         this.gpuVertexColors = [];
          this.getZValues();
 
-         console.log("Writing point cloud file string.");
+         uiBaseLayer--;
+         uiLog("Writing point cloud file string.");
+         uiBaseLayer--;
          var objString = "";
          const SAMPLING_RATE_STEP = Math.round(
             100 / POINT_CLOUD_SAMPLING_RATE_PERCENT
@@ -72,6 +84,13 @@ class PointCloud {
                      " " +
                      b +
                      "\n";
+
+                  this.gpuVertices.push(
+                     x / this.dimensions[0] - 0.5,
+                     y / this.dimensions[0] - 0.5,
+                     z / this.dimensions[0] - 0.5
+                  );
+                  this.gpuVertexColors.push(r / 255, g / 255, b / 255);
                }
             }
          }
@@ -88,21 +107,31 @@ class PointCloud {
    }
 
    calculate() {
-      console.log("Integrating normal map.");
+      uiBaseLayer--;
+      uiLog("Integrating normal map.");
+      uiBaseLayer++;
+      uiLog("Applying local gradient factor.");
+      uiBaseLayer++;
 
       const ic = new ImageCalc();
-      const red = ic.getChannel(this.normalMap.getAsJsImageObject(), "r");
-      const green = ic.getChannel(this.normalMap.getAsJsImageObject(), "g");
-      const blue = ic.getChannel(this.normalMap.getAsJsImageObject(), "b");
+      const icNormalMap = ic.loadImage(this.normalMap.getAsJsImageObject());
 
-      ic.setResultChannels([
-         ic.divide(red, ic.multiply(blue, 8)),
-         ic.divide(green, ic.multiply(blue, 8)),
-         0,
-         1,
-      ]);
+      const red = ic.getChannelFromImage(icNormalMap, COLOR_CHANNEL.RED);
+      const green = ic.getChannelFromImage(icNormalMap, COLOR_CHANNEL.GREEN);
+      const blue = ic.getChannelFromImage(icNormalMap, COLOR_CHANNEL.BLUE);
 
-      const gradientPixelArray = ic.getResultAsPixelArray();
+      const result = ic.getImageFromChannels(
+         ic.divide(red, blue),
+         ic.divide(green, blue),
+         ic.loadNumber(0),
+         ic.loadNumber(1)
+      );
+
+      const gradientPixelArray = ic.renderToPixelArray(result);
+      ic.purge();
+
+      uiBaseLayer--;
+      uiLog("Calculating anisotropic Riemann integral (1/2).");
 
       this.zValues = Array(this.dimensions[0] * this.dimensions[1]).fill(0);
 
@@ -136,6 +165,8 @@ class PointCloud {
          }
       }
 
+      uiLog("Calculating anisotropic Riemann integral (2/2).");
+
       for (var x = 0; x < this.dimensions[0]; x++) {
          zLineOffset = 0;
          zLineOffsetI = 0;
@@ -162,7 +193,11 @@ class PointCloud {
       }
    }
 
-   getNextPixelAndVector(currentPixel: any, currentVector: any, gradient: any[]) {
+   getNextPixelAndVector(
+      currentPixel: any,
+      currentVector: any,
+      gradient: any[]
+   ) {
       var nextPixel = currentPixel;
       var nextVector = currentVector;
       while (nextPixel == currentPixel) {
@@ -191,66 +226,231 @@ class PointCloud {
       return true;
    }
 
-   /*getGradientFromDegree(degree) {
-      const radians = degree * DEGREE_TO_RADIANS_FACTOR;
-      return [Math.cos(radians), Math.sin(radians)];
-   }*/
+   renderPreviewTo(previewDiv: HTMLElement) {
+      var pointCloudRenderer: PointCloudRenderer = new PointCloudRenderer(
+         this.gpuVertices,
+         this.gpuVertexColors,
+         previewDiv
+      );
+   }
+}
 
-   getFrontalDegreeFromSphericalDegree(sphericalDegree: number) {
-      switch (sphericalDegree) {
-         case NORTH:
-            return 0;
-         case SOUTH:
-            return 180;
-         case NORTH_EAST:
-            return 45;
-         case SOUTH_WEST:
-            return 225;
-         case WEST:
-            return 270;
-         case EAST:
-            return 90;
-         case SOUTH_EAST:
-            return 135;
-         case NORTH_WEST:
-            return 315;
-         default:
-            console.warn("Spherical degree not known!");
-            return null;
-      }
+class PointCloudRenderer {
+   private gpuVertices: number[];
+   private gpuVertexColors: number[];
+
+   private vertexCount: number;
+
+   private rotationSpeed: number = 0.001;
+   private rotation: number = 0;
+   private deltaTime: number = 0;
+   private then: number = 0;
+
+   private div: HTMLElement;
+
+   private gl: WebGL2RenderingContext;
+   private canvas: HTMLCanvasElement;
+   private rotationUniform: WebGLUniformLocation;
+
+   constructor(
+      gpuVertices: number[],
+      gpuVertexColors: number[],
+      div: HTMLElement
+   ) {
+      this.gpuVertices = gpuVertices;
+      this.gpuVertexColors = gpuVertexColors;
+      this.div = div;
+      this.vertexCount = gpuVertices.length / 3;
+      this.initializeContext();
    }
 
-   /*getPixelLine(outerStartPixel, sphericalDegree) {
-      if (outerStartPixel == null) {
-         return null;
-      }
+   private initializeContext(): void {
+      this.canvas = document.createElement("canvas");
+      this.canvas.style.position = "absolute";
+      this.canvas.style.top = "50%";
+      this.canvas.style.left = "50%";
+      this.canvas.style.transform = "translate(-50%, -50%)";
+      this.canvas.style.transition = "all 1s";
+      //this.canvas.style.height = "100%";
+      //this.canvas.style.width = "100%";
+      this.div.appendChild(this.canvas);
+      /*================Creating a canvas=================*/
+      this.gl = this.canvas.getContext("webgl2");
 
-      const degree = this.getFrontalDegreeFromSphericalDegree(sphericalDegree);
-      const gradient = this.getGradientFromDegree(degree);
-      const nextPixelAndVector = this.getNextPixelAndVector(
-         outerStartPixel,
-         outerStartPixel,
-         gradient
+      /*==========Defining and storing the geometry=======*/
+
+      var vertices = this.gpuVertices;
+      var colors = this.gpuVertexColors;
+      var vertexCount = vertices.length / 3;
+
+      // Create an empty buffer object to store the vertex buffer
+      var vertex_buffer = this.gl.createBuffer();
+
+      //Bind appropriate array buffer to it
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertex_buffer);
+
+      // Pass the vertex data to the buffer
+      this.gl.bufferData(
+         this.gl.ARRAY_BUFFER,
+         new Float32Array(vertices),
+         this.gl.STATIC_DRAW
       );
 
-      var nextPixel = nextPixelAndVector[0];
-      var nextVector = nextPixelAndVector[1];
+      // Unbind the buffer
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
 
-      if (this.isPixelIsInDimensions(nextPixel)) {
-         const pixelLine = [];
-         while (this.isPixelIsInDimensions(nextPixel)) {
-            pixelLine.push(nextPixel);
-            const nextValues = this.getNextPixelAndVector(
-               nextPixel,
-               nextVector,
-               gradient
-            );
-            nextPixel = nextValues[0];
-            nextVector = nextValues[1];
-         }
-         return pixelLine;
+      var color_buffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, color_buffer);
+      this.gl.bufferData(
+         this.gl.ARRAY_BUFFER,
+         new Float32Array(colors),
+         this.gl.STATIC_DRAW
+      );
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+
+      /*=========================Shaders========================*/
+
+      var xRot = -90;
+      xRot *= Math.PI / 180;
+
+      // vertex shader source code
+      var vertCode = [
+         "#version 300 es",
+         "",
+         "in vec3 coordinates;",
+         "in vec3 v_color;",
+         "uniform float rot;",
+         "out vec3 f_color;",
+         "",
+         "void main() {",
+         " f_color = v_color;",
+         "",
+         " float sinRotY = sin(rot);",
+         " float cosRotY = cos(rot);",
+         " ",
+         " float sinRotX = " +
+            GlslNumber.getNumberAsString(Math.sin(xRot)) +
+            ";",
+         " float cosRotX = " +
+            GlslNumber.getNumberAsString(Math.cos(xRot)) +
+            ";",
+         " ",
+         " mat3 yRot;",
+         " yRot[0] = vec3(cosRotY, 0.0, sinRotY);",
+         " yRot[1] = vec3(0.0, 1.0, 0.0);",
+         " yRot[2] = vec3(-sinRotY, 0.0, cosRotY);",
+         " ",
+         " mat3 xRot;",
+         " xRot[0] = vec3(1.0, 0.0, 0.0);",
+         " xRot[1] = vec3(0.0, cosRotX, -sinRotX);",
+         " xRot[2] = vec3(0.0, sinRotX, cosRotX);",
+         " vec3 pos = coordinates * xRot * yRot;",
+         " gl_Position = vec4(pos.x, pos.y + 0.5, pos.z, 1.0);",
+         " gl_PointSize = 1.0;",
+         "}",
+      ].join("\n");
+
+      // Create a vertex shader object
+      var vertShader = this.gl.createShader(this.gl.VERTEX_SHADER);
+
+      // Attach vertex shader source code
+      this.gl.shaderSource(vertShader, vertCode);
+
+      // Compile the vertex shader
+      this.gl.compileShader(vertShader);
+
+      // fragment shader source code
+      var fragCode = [
+         "#version 300 es",
+         "precision mediump float;",
+         "",
+         "in vec3 f_color;",
+         "out vec4 fragColor;",
+         "",
+         "void main() {",
+         " fragColor = vec4(f_color, 1.0);",
+         "}",
+      ].join("\n");
+
+      // Create fragment shader object
+      var fragShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+
+      // Attach fragment shader source code
+      this.gl.shaderSource(fragShader, fragCode);
+
+      // Compile the fragment shader
+      this.gl.compileShader(fragShader);
+
+      // Create a shader program object to store
+      // the combined shader program
+      var shaderProgram = this.gl.createProgram();
+
+      // Attach a vertex shader
+      this.gl.attachShader(shaderProgram, vertShader);
+
+      // Attach a fragment shader
+      this.gl.attachShader(shaderProgram, fragShader);
+
+      // Link both programs
+      this.gl.linkProgram(shaderProgram);
+
+      // Use the combined shader program object
+      this.gl.useProgram(shaderProgram);
+
+      /*======== Associating shaders to buffer objects ========*/
+
+      // Bind vertex buffer object
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertex_buffer);
+
+      // Get the attribute location
+      var coord = this.gl.getAttribLocation(shaderProgram, "coordinates");
+
+      // Point an attribute to the currently bound VBO
+      this.gl.vertexAttribPointer(coord, 3, this.gl.FLOAT, false, 0, 0);
+
+      // Enable the attribute
+      this.gl.enableVertexAttribArray(coord);
+
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, color_buffer);
+      var color = this.gl.getAttribLocation(shaderProgram, "v_color");
+      this.gl.vertexAttribPointer(color, 3, this.gl.FLOAT, false, 0, 0);
+      this.gl.enableVertexAttribArray(color);
+
+      this.rotationUniform = this.gl.getUniformLocation(shaderProgram, "rot");
+
+      this.gl.clearColor(0, 0, 0, 0);
+      this.gl.enable(this.gl.DEPTH_TEST);
+      this.refreshViewportSize();
+
+      window.addEventListener("resize", this.refreshViewportSize.bind(this));
+
+      this.render(0);
+   }
+
+   private refreshViewportSize(): void {
+      if (this.div.clientWidth > this.div.clientHeight) {
+         this.canvas.width = this.div.clientHeight * 2;
+         this.canvas.height = this.div.clientHeight * 2;
       } else {
-         return null;
+         this.canvas.width = this.div.clientWidth * 2;
+         this.canvas.height = this.div.clientWidth * 2;
       }
-   }*/
+
+      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+   }
+
+   private render(now: number): void {
+      now *= 1.001;
+      this.deltaTime = now - this.then;
+      this.then = now;
+
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+
+      this.rotation += this.deltaTime * this.rotationSpeed;
+
+      this.gl.uniform1f(this.rotationUniform, this.rotation);
+
+      this.gl.drawArrays(this.gl.POINTS, 0, this.vertexCount);
+      window.requestAnimationFrame(this.render.bind(this));
+   }
 }

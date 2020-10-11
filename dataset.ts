@@ -9,7 +9,7 @@ class Dataset {
    private lightingAzimuthalAngles: number[];
    private lightingCoordinates: SphericalCoordinate[];
    private dataLoadedCallback: TimerHandler;
-   private jsImageObjects: (HTMLImageElement | ShaderVariable)[];
+   private jsImageObjects: HTMLImageElement[];
    private noLightImageObject: HTMLImageElement;
    private dataInput: DataInput;
    private type: DATATYPE;
@@ -44,13 +44,7 @@ class Dataset {
       return this.lightingCoordinates;
    }
 
-   public getImageDimensions() {
-      if (this.jsImageObjects[0] instanceof ShaderVariable) {
-         return [
-            this.jsImageObjects[0].getValue().width,
-            this.jsImageObjects[0].getValue().height,
-         ];
-      }
+   public getImageDimensions(): [number, number] {
       return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
    }
 
@@ -141,7 +135,7 @@ class Dataset {
       console.warn("Not found lighting angle in dataset to set image.");
    }
 
-   public getImage(lightingAngle: number) {
+   public getImage(lightingAngle: number): HTMLImageElement {
       for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
          if (
             this.lightingCoordinates[i].getAzimuthalAngle() === lightingAngle
@@ -175,7 +169,7 @@ class Dataset {
    }
 
    private dataLoaded() {
-      console.log("Data loaded.");
+      //console.log("Data loaded.");
       setTimeout(this.dataLoadedCallback, 0);
    }
 }
@@ -214,6 +208,7 @@ class DropInput {
    private droppedFiles: FileList;
    private imagesLoaded: number;
    private dataset: Dataset;
+   private objectName: string;
 
    constructor(
       dataInput: DataInput,
@@ -227,16 +222,22 @@ class DropInput {
       this.droppedDataLoadedCallback = droppedDataLoadedCallback;
       this.droppedFiles = droppedFiles;
       this.dataset = dataset;
+      this.objectName = null;
 
       this.imagesLoaded = 0;
       this.loadAllImages();
+   }
+
+   public getObjectName(): string {
+      return this.objectName;
    }
 
    private loadAllImages() {
       console.log("Loading " + this.droppedFiles.length + " images for cpu.");
 
       const fileNameGlobal: string = this.droppedFiles[0].name.split(".")[0];
-      const polarAngleGlobal: number = Number(fileNameGlobal.split("_", 2)[2]);
+      const polarAngleGlobal: number = Number(fileNameGlobal.split("_", 3)[2]);
+      this.objectName = fileNameGlobal.split("_", 1)[0];
 
       this.lightingCoordinates = this.dataset.getLightingCoordinates(
          polarAngleGlobal
@@ -246,7 +247,7 @@ class DropInput {
          const fileName: string = this.droppedFiles[i].name.split(".")[0];
 
          const azimuthalAngle: number = Number(fileName.split("_", 2)[1]);
-         const polarAngle: number = Number(fileName.split("_", 2)[2]);
+         const polarAngle: number = Number(fileName.split("_", 3)[2]);
 
          const imageDegree = new SphericalCoordinate(
             azimuthalAngle,
@@ -287,6 +288,12 @@ class DropInput {
       image: HTMLImageElement,
       imageDegree: SphericalCoordinate
    ) {
+      uiLog(
+         "Image with spherical degree " +
+            imageDegree.getDisplayString() +
+            " loaded.",
+         1
+      );
       this.imagesLoaded++;
       image.removeEventListener("load", this.imageLoaded.bind(this));
       this.dataInput.inputImage(imageDegree, image);
@@ -402,7 +409,7 @@ class WebcamInput {
    private capture() {
       var nextLightingAngleIndex = this.getNextLightingAngleIndex();
 
-      if (nextLightingAngleIndex != null) {
+      if (nextLightingAngleIndex !== null) {
          var lightingAngle = this.lightingCoordinates[
             nextLightingAngleIndex
          ].getAzimuthalAngle();

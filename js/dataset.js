@@ -19,12 +19,6 @@ class Dataset {
         return this.lightingCoordinates;
     }
     getImageDimensions() {
-        if (this.jsImageObjects[0] instanceof ShaderVariable) {
-            return [
-                this.jsImageObjects[0].getValue().width,
-                this.jsImageObjects[0].getValue().height,
-            ];
-        }
         return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
     }
     getType() {
@@ -94,7 +88,7 @@ class Dataset {
         return this.dataInput.getObjectName();
     }
     dataLoaded() {
-        console.log("Data loaded.");
+        //console.log("Data loaded.");
         setTimeout(this.dataLoadedCallback, 0);
     }
 }
@@ -121,18 +115,23 @@ class DropInput {
         this.droppedDataLoadedCallback = droppedDataLoadedCallback;
         this.droppedFiles = droppedFiles;
         this.dataset = dataset;
+        this.objectName = null;
         this.imagesLoaded = 0;
         this.loadAllImages();
+    }
+    getObjectName() {
+        return this.objectName;
     }
     loadAllImages() {
         console.log("Loading " + this.droppedFiles.length + " images for cpu.");
         const fileNameGlobal = this.droppedFiles[0].name.split(".")[0];
-        const polarAngleGlobal = Number(fileNameGlobal.split("_", 2)[2]);
+        const polarAngleGlobal = Number(fileNameGlobal.split("_", 3)[2]);
+        this.objectName = fileNameGlobal.split("_", 1)[0];
         this.lightingCoordinates = this.dataset.getLightingCoordinates(polarAngleGlobal);
         for (var i = 0; i < this.droppedFiles.length; i++) {
             const fileName = this.droppedFiles[i].name.split(".")[0];
             const azimuthalAngle = Number(fileName.split("_", 2)[1]);
-            const polarAngle = Number(fileName.split("_", 2)[2]);
+            const polarAngle = Number(fileName.split("_", 3)[2]);
             const imageDegree = new SphericalCoordinate(azimuthalAngle, polarAngle);
             const fileType = this.droppedFiles[i].type;
             if (LIGHTING_AZIMUTHAL_ANGLES.includes(azimuthalAngle) &&
@@ -154,6 +153,9 @@ class DropInput {
         image.src = String(readerResult);
     }
     imageLoaded(image, imageDegree) {
+        uiLog("Image with spherical degree " +
+            imageDegree.getDisplayString() +
+            " loaded.", 1);
         this.imagesLoaded++;
         image.removeEventListener("load", this.imageLoaded.bind(this));
         this.dataInput.inputImage(imageDegree, image);
@@ -224,7 +226,7 @@ class WebcamInput {
     }
     capture() {
         var nextLightingAngleIndex = this.getNextLightingAngleIndex();
-        if (nextLightingAngleIndex != null) {
+        if (nextLightingAngleIndex !== null) {
             var lightingAngle = this.lightingCoordinates[nextLightingAngleIndex].getAzimuthalAngle();
             this.gradientLighting.display(lightingAngle, this.singleCapture.bind(this, lightingAngle));
         }

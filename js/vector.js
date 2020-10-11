@@ -5,6 +5,10 @@ class Vector3 {
         this.y = y;
         this.z = z;
     }
+    normalize() {
+        var length = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        return new Vector3(this.x / length, this.y / length, this.z / length);
+    }
 }
 class Matrix3x3 {
     constructor(matrix) {
@@ -22,8 +26,23 @@ class Matrix3x3 {
     getValue(row, column) {
         return this.matrix[row][column];
     }
+    vector3Multiply(vector) {
+        return new Vector3(this.matrix[0][0] * vector.x +
+            this.matrix[0][1] * vector.y +
+            this.matrix[0][2] * vector.z, this.matrix[1][0] * vector.x +
+            this.matrix[1][1] * vector.y +
+            this.matrix[1][2] * vector.z, this.matrix[2][0] * vector.x +
+            this.matrix[2][1] * vector.y +
+            this.matrix[2][2] * vector.z);
+    }
     inverse() {
+        //Copied from http://blog.acipo.com/matrix-inversion-in-javascript/
         if (this.matrix.length !== this.matrix[0].length) {
+            console.warn("Can't calculate inverse of " +
+                this.matrix.length +
+                "x" +
+                this.matrix[0].length +
+                " matrix.");
             return;
         }
         var i = 0, ii = 0, j = 0, dim = this.matrix.length, e = 0, t = 0;
@@ -59,6 +78,11 @@ class Matrix3x3 {
                 }
                 e = C[i][i];
                 if (e == 0) {
+                    console.warn("Can't calculate inverse of " +
+                        this.matrix.length +
+                        "x" +
+                        this.matrix[0].length +
+                        " matrix.");
                     return;
                 }
             }
@@ -83,6 +107,11 @@ class Matrix3x3 {
             [I[0][1], I[1][1], I[2][1]],
             [I[0][2], I[1][2], I[2][2]],
         ]);
+        /*return new Matrix3x3([
+           [I[0][0], I[0][1], I[0][2]],
+           [I[1][0], I[1][1], I[1][2]],
+           [I[2][0], I[2][1], I[2][2]],
+        ]);*/
     }
 }
 class Color {

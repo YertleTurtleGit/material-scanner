@@ -107,6 +107,13 @@ button:hover {
    object-fit: cover;
 }
 
+#current-task-info {
+   z-index: 999;
+   background-color: var(--background-color);
+   font-size: large;
+   transition: all 0.5s;
+}
+
 .lds-dual-ring {
    display: inline-block;
    width: 80px;

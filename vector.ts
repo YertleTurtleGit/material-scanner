@@ -10,6 +10,13 @@ class Vector3 {
       this.y = y;
       this.z = z;
    }
+
+   public normalize(): Vector3 {
+      var length = Math.sqrt(
+         this.x * this.x + this.y * this.y + this.z * this.z
+      );
+      return new Vector3(this.x / length, this.y / length, this.z / length);
+   }
 }
 
 class Matrix3x3 {
@@ -43,8 +50,31 @@ class Matrix3x3 {
       return this.matrix[row][column];
    }
 
-   public inverse() {
+   public vector3Multiply(vector: Vector3) {
+      return new Vector3(
+         this.matrix[0][0] * vector.x +
+            this.matrix[0][1] * vector.y +
+            this.matrix[0][2] * vector.z,
+         this.matrix[1][0] * vector.x +
+            this.matrix[1][1] * vector.y +
+            this.matrix[1][2] * vector.z,
+         this.matrix[2][0] * vector.x +
+            this.matrix[2][1] * vector.y +
+            this.matrix[2][2] * vector.z
+      );
+   }
+
+   public inverse(): Matrix3x3 {
+      //Copied from http://blog.acipo.com/matrix-inversion-in-javascript/
+
       if (this.matrix.length !== this.matrix[0].length) {
+         console.warn(
+            "Can't calculate inverse of " +
+               this.matrix.length +
+               "x" +
+               this.matrix[0].length +
+               " matrix."
+         );
          return;
       }
 
@@ -88,6 +118,13 @@ class Matrix3x3 {
             }
             e = C[i][i];
             if (e == 0) {
+               console.warn(
+                  "Can't calculate inverse of " +
+                     this.matrix.length +
+                     "x" +
+                     this.matrix[0].length +
+                     " matrix."
+               );
                return;
             }
          }
@@ -116,6 +153,11 @@ class Matrix3x3 {
          [I[0][1], I[1][1], I[2][1]],
          [I[0][2], I[1][2], I[2][2]],
       ]);
+      /*return new Matrix3x3([
+         [I[0][0], I[0][1], I[0][2]],
+         [I[1][0], I[1][1], I[1][2]],
+         [I[2][0], I[2][1], I[2][2]],
+      ]);*/
    }
 }
 

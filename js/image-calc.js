@@ -1,118 +1,639 @@
 "use strict";
 class ImageCalc {
-    constructor(onlyLuminance = false) {
-        console.log("Generating shader source.");
-        this.imageShaderConstructor = new ImageShaderConstructor(onlyLuminance);
+    constructor() {
+        uiLog("Generating shader source.");
+        this.glslContext = new GlslContext(WIDTH, HEIGHT);
     }
-    add(addend1, addend2) {
-        return this.calculate(addend1, addend2, "+");
+    loadImage(image) {
+        const glslImage = GlslImage.loadFromJsImage(image);
+        this.glslContext.addGlslVariable(glslImage);
+        return glslImage;
     }
-    substract(minuend, subtrahend) {
-        return this.calculate(minuend, subtrahend, "-");
+    loadNumber(number) {
+        const glslNumber = GlslNumber.loadFromJsNumber(number);
+        this.glslContext.addGlslVariable(glslNumber);
+        return glslNumber;
     }
-    multiply(multiplier, multiplicand) {
-        return this.calculate(multiplier, multiplicand, "*");
+    add(...operants) {
+        const glslVariable = new GlslAddition(operants).getGlslResultVariable();
+        this.glslContext.addGlslVariable(glslVariable);
+        return glslVariable;
     }
-    divide(dividend, divisor) {
-        return this.calculate(dividend, divisor, "/");
+    substract(...operants) {
+        const glslVariable = new GlslSubstraction(operants).getGlslResultVariable();
+        this.glslContext.addGlslVariable(glslVariable);
+        return glslVariable;
     }
-    max(comparable1, comparable2) {
-        return this.calculate(comparable1, comparable2, "max");
+    multiply(...operants) {
+        const glslVariable = new GlslMultiplication(operants).getGlslResultVariable();
+        this.glslContext.addGlslVariable(glslVariable);
+        return glslVariable;
     }
-    min(comparable1, comparable2) {
-        return this.calculate(comparable1, comparable2, "min");
+    divide(...operants) {
+        const glslVariable = new GlslDivision(operants).getGlslResultVariable();
+        this.glslContext.addGlslVariable(glslVariable);
+        return glslVariable;
     }
-    getChannel(image, channelChar) {
-        return this.calculate(image, channelChar, ".");
+    min(...parameters) {
+        const operation = new GlslMethodMin(parameters);
+        const glslVariable = operation.getGlslResultVariable();
+        this.glslContext.addGlslVariable(glslVariable);
+        // TODO: Beautify
+        glslVariable.setDeclaringOperation(operation);
+        return glslVariable;
     }
-    declareVariable() {
-        return this.imageShaderConstructor.addUniform();
+    max(...parameters) {
+        const operation = new GlslMethodMax(parameters);
+        const glslVariable = operation.getGlslResultVariable();
+        this.glslContext.addGlslVariable(glslVariable);
+        // TODO: Beautify
+        glslVariable.setDeclaringOperation(operation);
+        return glslVariable;
     }
-    setVariable(variable, newValue) {
-        variable.setValue(newValue);
+    normalize(glslVariable) {
+        const operation = new GlslNormalize(glslVariable);
+        const glslResult = operation.getGlslResultVariable();
+        this.glslContext.addGlslVariable(glslResult);
+        // TODO: Beautify
+        glslResult.setDeclaringOperation(operation);
+        return glslResult;
     }
-    sieve(image1, factor1, conditionOperator, image2, factor2) {
-        return this.imageShaderConstructor.addSieve(image1, factor1, conditionOperator, image2, factor2);
+    getGrayscaleFloat(image, channelProportions = [1 / 3, 1 / 3, 1 / 3]) {
+        const glslNumber = GlslNumber.loadFromGlslImageGrayscale(image, channelProportions);
+        this.glslContext.addGlslVariable(glslNumber);
+        return glslNumber;
     }
-    calculate(operant1, operant2, operator) {
-        return this.imageShaderConstructor.addCalculation(operant1, operant2, operator);
+    getChannelFromImage(image, channel) {
+        const glslNumber = GlslNumber.loadFromGlslImageChannel(image, channel);
+        this.glslContext.addGlslVariable(glslNumber);
+        return glslNumber;
     }
-    setResult(value) {
-        this.imageShaderConstructor.setResult(value);
+    getImageFromChannels(red, green, blue, alpha) {
+        const glslImage = GlslImage.getFromChannels(red, green, blue, alpha);
+        this.glslContext.addGlslVariable(glslImage);
+        return glslImage;
     }
-    setResultChannels(channels) {
-        this.imageShaderConstructor.setChannelResult(channels[0], 0);
-        this.imageShaderConstructor.setChannelResult(channels[1], 1);
-        this.imageShaderConstructor.setChannelResult(channels[2], 2);
-        this.imageShaderConstructor.setChannelResult(channels[3], 3);
+    renderToFramebuffer(glslImage) {
+        return this.glslContext.renderFramebuffer(glslImage);
     }
-    getResultAsJsImageObject(onloadCallback) {
-        return this.imageShaderConstructor.getResultJsImageObject(onloadCallback);
+    renderToPixelArray(glslImage) {
+        return this.glslContext.renderPixelArray(glslImage);
     }
-    getResultAsPixelArray() {
-        return this.imageShaderConstructor.getResultPixelArray();
+    renderToDataUrl(glslImage) {
+        return this.glslContext.renderDataUrl(glslImage);
     }
-    getResultAsDataUrl() {
-        return this.imageShaderConstructor.getResultAsDataUrl();
-    }
-    compile() {
-        this.imageShaderConstructor.compileShaderProgram();
+    renderToImage(glslImage, onloadFunction) {
+        return this.glslContext.renderImage(glslImage, onloadFunction);
     }
     purge() {
-        this.imageShaderConstructor.purge();
+        this.glslContext.purge();
     }
 }
-class ImageShaderConstructor {
-    constructor(onlyLuminance = false, floatPrecision = "highp" /* HIGH */) {
-        this.floatPrecision = floatPrecision;
-        this.calculations = [];
-        this.sieves = [];
-        this.uniforms = [];
-        this.shaderProgram = null;
-        this.result = [null, null, null];
-        this.resultImage = null;
-        this.onlyLuminance = onlyLuminance;
-        this.shaderRun = false;
+class GlslFramebuffer {
+}
+class GlslVariable {
+    constructor() {
+        this.declaringOperation = null;
+        this.glslName = GlslVariable.getUniqueName(this.getGlslVarType());
+    }
+    setDeclaringOperation(declaringOperation) {
+        this.declaringOperation = declaringOperation;
+    }
+    hasDeclaringOperation() {
+        return this.declaringOperation !== null;
+    }
+    static getUniqueName(prefix) {
+        GlslVariable.uniqueNumber++;
+        return prefix + "_" + String(GlslVariable.uniqueNumber);
+    }
+    getGlslName() {
+        return this.glslName;
+    }
+}
+GlslVariable.uniqueNumber = 0;
+class GlslImage extends GlslVariable {
+    constructor() {
+        super(...arguments);
+        this.glslTexture = null;
+        this.declarationFromChannels = null;
+    }
+    static loadFromJsImage(image) {
+        var glslImage = new GlslImage();
+        glslImage.setGlslTexture(new GlslTexture(image));
+        return glslImage;
+    }
+    static getFromChannels(red, green, blue, alpha) {
+        var channelImage = new GlslImage();
+        channelImage.declarationFromChannels =
+            channelImage.getGlslVarType() +
+                " " +
+                channelImage.getGlslName() +
+                " = " +
+                "vec4(" +
+                red.getGlslName() +
+                ", " +
+                green.getGlslName() +
+                ", " +
+                blue.getGlslName() +
+                ", " +
+                alpha.getGlslName() +
+                ");";
+        return channelImage;
+    }
+    getGlslTexture() {
+        return this.glslTexture;
+    }
+    setGlslTexture(glslTexture) {
+        this.glslTexture = glslTexture;
+    }
+    getGlslVarType() {
+        return "vec4" /* VEC4 */;
+    }
+    hasTexture() {
+        return this.glslTexture !== null;
+    }
+    hasDeclarationFromChannels() {
+        return this.declarationFromChannels !== null;
+    }
+    getGlslPreMainDeclaration() {
+        if (this.hasTexture()) {
+            return this.glslTexture.getGlslPreMainDeclaration();
+        }
+        return null;
+    }
+    getGlslMainDeclaration() {
+        var source = "";
+        if (this.hasTexture()) {
+            source += this.glslTexture.getGlslMainDeclaration(this.getGlslName());
+        }
+        if (this.hasDeclaringOperation()) {
+            source += this.declaringOperation.getGlslExpression();
+        }
+        if (this.hasDeclarationFromChannels()) {
+            source += this.declarationFromChannels;
+        }
+        if (source === "") {
+            console.warn("Image is somehow not declared on gpu.");
+            return null;
+        }
+        return source;
+    }
+}
+class GlslTexture {
+    constructor(image) {
+        this.image = image;
+        this.samplerName = GlslVariable.getUniqueName("sampler");
+    }
+    getDimensions() {
+        return [this.image.width, this.image.height];
+    }
+    getGlslPreMainDeclaration() {
+        return "uniform sampler2D " + this.samplerName + ";";
+    }
+    getGlslMainDeclaration(outGlslName) {
+        return ("vec4" /* VEC4 */ +
+            " " +
+            outGlslName +
+            " = texture(" +
+            this.samplerName +
+            ", " +
+            "uv" /* UV */ +
+            ");");
+    }
+    loadTextureIntoShaderProgram(glContext, shaderProgram, textureUnit) {
+        glContext.activeTexture(glContext.TEXTURE0 + textureUnit);
+        glContext.bindTexture(glContext.TEXTURE_2D, this.createTextureInContext(glContext));
+        glContext.uniform1i(glContext.getUniformLocation(shaderProgram, this.samplerName), textureUnit);
+    }
+    createTextureInContext(glContext) {
+        var texture = glContext.createTexture();
+        glContext.bindTexture(glContext.TEXTURE_2D, texture);
+        glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_WRAP_S, glContext.CLAMP_TO_EDGE);
+        glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_WRAP_T, glContext.CLAMP_TO_EDGE);
+        glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MIN_FILTER, glContext.LINEAR);
+        glContext.texParameteri(glContext.TEXTURE_2D, glContext.TEXTURE_MAG_FILTER, glContext.LINEAR);
+        glContext.texImage2D(glContext.TEXTURE_2D, 0, glContext.RGBA, glContext.RGBA, glContext.UNSIGNED_BYTE, this.image);
+        return texture;
+    }
+}
+class GlslNumber extends GlslVariable {
+    constructor() {
+        super(...arguments);
+        this.glslValue = null;
+    }
+    static loadFromGlslImageGrayscale(glslImage, channelProportions) {
+        var glslNumber = new GlslNumber();
+        glslNumber.glslValue =
+            glslImage.getGlslName() +
+                "." +
+                "r" /* RED */ +
+                "*" +
+                channelProportions[0] +
+                "+" +
+                glslImage.getGlslName() +
+                "." +
+                "g" /* GREEN */ +
+                "*" +
+                channelProportions[1] +
+                "+" +
+                glslImage.getGlslName() +
+                "." +
+                "b" /* BLUE */ +
+                "*" +
+                channelProportions[2];
+        return glslNumber;
+    }
+    static loadFromGlslImageChannel(glslImage, channel) {
+        var glslNumber = new GlslNumber();
+        glslNumber.glslValue = glslImage.getGlslName() + "." + channel;
+        return glslNumber;
+    }
+    static loadFromJsNumber(number) {
+        var glslNumber = new GlslNumber();
+        glslNumber.glslValue = GlslNumber.getNumberAsString(number);
+        return glslNumber;
+    }
+    static getNumberAsString(number) {
+        if (Math.trunc(number) === number) {
+            return number.toString() + ".0";
+        }
+        if (number.toString().includes("e-")) {
+            console.warn(number + " is converted to zero.");
+            return "0.0";
+        }
+        return number.toString();
+    }
+    hasValueRepresentation() {
+        return this.glslValue !== null;
+    }
+    getGlslName() {
+        if (this.hasValueRepresentation()) {
+            return this.glslValue;
+        }
+        return super.getGlslName();
+    }
+    getGlslVarType() {
+        return "float" /* FLOAT */;
+    }
+    getGlslPreMainDeclaration() {
+        return null;
+    }
+    getGlslMainDeclaration() {
+        if (this.hasValueRepresentation()) {
+            return null;
+        }
+        if (this.hasDeclaringOperation()) {
+            return this.declaringOperation.getGlslExpression();
+        }
+        console.warn("Number is somehow not declared on gpu.");
+        return null;
+    }
+}
+//class GlslUniform extends GlslVariable {}
+class GlslOperation {
+    constructor(parameters) {
+        this.parameters = parameters;
+        this.glslResult = this.createGlslResultVariable();
+        this.glslResult.setDeclaringOperation(this);
+    }
+    getGlslResultVariable() {
+        return this.glslResult;
+    }
+}
+class GlslArithmeticOperation extends GlslOperation {
+    constructor(parameters) {
+        super(parameters);
+    }
+    getGlslExpression() {
+        var operantNames = [];
+        for (var i = 0; i < this.parameters.length; i++) {
+            var addendName = this.parameters[i].getGlslName();
+            if (this.parameters[i].getGlslVarType() === "float" /* FLOAT */ &&
+                this.anyIsImage()) {
+                addendName =
+                    "vec4(" +
+                        addendName +
+                        ", " +
+                        addendName +
+                        ", " +
+                        addendName +
+                        ", 1.0)";
+            }
+            operantNames.push(addendName);
+        }
+        return (this.glslResult.getGlslVarType() +
+            " " +
+            this.glslResult.getGlslName() +
+            " = " +
+            operantNames.join(" " + this.getGlslOperator() + " ") +
+            ";");
+    }
+    getGlslVariables() {
+        var allGlslVariables = [];
+        for (var i = 0; i < this.parameters.length; i++) {
+            allGlslVariables.push(this.parameters[i]);
+        }
+        allGlslVariables.push(this.glslResult);
+        return allGlslVariables;
+    }
+    anyIsImage() {
+        for (var i = 0; i < this.parameters.length; i++) {
+            if (this.parameters[i].getGlslVarType() === "vec4" /* VEC4 */) {
+                return true;
+            }
+        }
+        return false;
+    }
+    createGlslResultVariable() {
+        if (this.anyIsImage()) {
+            return new GlslImage();
+        }
+        return new GlslNumber();
+    }
+    isValidOperation() {
+        return true;
+    }
+}
+class GlslAddition extends GlslArithmeticOperation {
+    getGlslOperator() {
+        return GlslAddition.operator;
+    }
+}
+GlslAddition.operator = "+";
+class GlslSubstraction extends GlslArithmeticOperation {
+    getGlslOperator() {
+        return GlslSubstraction.operator;
+    }
+}
+GlslSubstraction.operator = "-";
+class GlslMultiplication extends GlslArithmeticOperation {
+    constructor() {
+        super(...arguments);
+        this.operator = "*";
+    }
+    getGlslOperator() {
+        return this.operator;
+    }
+}
+class GlslDivision extends GlslArithmeticOperation {
+    constructor() {
+        super(...arguments);
+        this.operator = "/";
+    }
+    getGlslOperator() {
+        return this.operator;
+    }
+    isValidOperation() {
+        for (var i = 0; i < this.parameters.length; i++) {
+            if (this.parameters[i].getGlslVarType() === "float" /* FLOAT */) {
+                for (var j = i; j < this.parameters.length; j++) {
+                    if (this.parameters[j].getGlslVarType() === "vec4" /* VEC4 */) {
+                        console.error("Value of type float can not be divided by value of type vec4.");
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+}
+class GlslMethod extends GlslOperation {
+    constructor(parameters) {
+        super(parameters);
+        this.parameters = parameters;
+        this.glslResult = this.createGlslResultVariable();
+    }
+    isValidOperation() {
+        return true;
+    }
+    createGlslResultVariable() {
+        if (this.parameters[0].getGlslVarType() === "float" /* FLOAT */) {
+            return new GlslNumber();
+        }
+        else if (this.parameters[0].getGlslVarType() === "vec4" /* VEC4 */) {
+            return new GlslImage();
+        }
+    }
+    getGlslVariables() {
+        var allGlslVariables = [];
+        for (var i = 0; i < this.parameters.length; i++) {
+            allGlslVariables.push(this.parameters[i]);
+        }
+        allGlslVariables.push(this.glslResult);
+        return allGlslVariables;
+    }
+}
+class GlslNormalize extends GlslMethod {
+    constructor(parameter) {
+        super([parameter]);
+    }
+    getGlslExpression() {
+        return (this.getGlslResultVariable().getGlslVarType() +
+            " " +
+            this.getGlslResultVariable().getGlslName() +
+            " = normalize(" +
+            this.parameters[0].getGlslName() +
+            ");");
+    }
+}
+class GlslMethodComparison extends GlslMethod {
+    constructor(parameters) {
+        super(parameters);
+    }
+    getGlslExpressionOfMethodName(methodName) {
+        if (this.parameters !== null) {
+            var paramExpressions = [];
+            for (var i = 0; i < this.parameters.length; i++) {
+                paramExpressions.push(this.parameters[i].getGlslName());
+            }
+            return (this.getGlslResultVariable().getGlslVarType() +
+                " " +
+                this.getGlslResultVariable().getGlslName() +
+                " = " +
+                this.getGlslExpressionOfParams(methodName, paramExpressions) +
+                ";");
+        }
+        else {
+            console.warn("parameters of method are null");
+            return null;
+        }
+    }
+    getGlslExpressionOfParams(methodName, params) {
+        if (params.length === 1) {
+            return params[0];
+        }
+        else if (params.length === 2) {
+            return methodName + "(" + params[0] + ", " + params[1] + ")";
+        }
+        else {
+            return (methodName +
+                "(" +
+                params.pop() +
+                ", " +
+                this.getGlslExpressionOfParams(methodName, params) +
+                ")");
+        }
+    }
+    isValidOperation() {
+        var lastType = this.parameters[0].getGlslVarType();
+        for (var i = 1; i < this.parameters.length; i++) {
+            if (lastType !== this.parameters[i].getGlslVarType()) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+class GlslMethodMin extends GlslMethodComparison {
+    constructor(parameters) {
+        super(parameters);
+    }
+    getGlslExpression() {
+        return this.getGlslExpressionOfMethodName(GlslMethodMin.methodName);
+    }
+}
+GlslMethodMin.methodName = "min";
+class GlslMethodMax extends GlslMethodComparison {
+    constructor(parameters) {
+        super(parameters);
+    }
+    getGlslExpression() {
+        return this.getGlslExpressionOfMethodName(GlslMethodMax.methodName);
+    }
+}
+GlslMethodMax.methodName = "max";
+//class GlslMethodSqrt extends GlslMethod {}
+//class GlslCondition extends GlslMethod {}
+class GlslShaderSourceGenerator {
+    constructor() {
+        this.floatPrecision = "high" + "p";
+        this.glslVariables = [];
+    }
+    checkIfGlslVariableExists(glslVariable) {
+        return this.glslVariables.includes(glslVariable);
+    }
+    addGlslVariable(glslVariable) {
+        //if (!this.checkIfGlslVariableExists(glslVariable)) {
+        this.glslVariables.push(glslVariable);
+        //}
+    }
+    getGlslTextures() {
+        var glslTextures = [];
+        for (var i = 0; i < this.glslVariables.length; i++) {
+            if (this.glslVariables[i] instanceof GlslImage) {
+                var glslImage = this.glslVariables[i];
+                if (glslImage.hasTexture()) {
+                    glslTextures.push(glslImage.getGlslTexture());
+                }
+            }
+        }
+        return glslTextures;
+    }
+    getGlslVertexSource() {
+        return [
+            "#version 300 es",
+            "",
+            "in vec3 " + "pos" /* POS */ + ";",
+            "in vec2 " + "tex" /* TEX */ + ";",
+            "",
+            "out vec2 " + "uv" /* UV */ + ";",
+            "",
+            "void main() {",
+            " " + "uv" /* UV */ + " = " + "tex" /* TEX */ + ";",
+            " gl_Position = vec4(" + "pos" /* POS */ + ", 1.0);",
+            "}",
+        ].join("\n");
+    }
+    getGlslFragmentSource(resultImage) {
+        return [
+            this.getGlslPreFragmentShaderSource(),
+            this.getGlslFragmentShaderPreMainDeclarationSource(),
+            "\nvoid main() {\n",
+            this.getGlslFragmentShaderMainDeclarationSource(),
+            "fragColor" /* OUT */ + " = " + resultImage.getGlslName() + ";",
+            "}",
+        ].join("\n");
+    }
+    getGlslPreFragmentShaderSource() {
+        return [
+            "#version 300 es",
+            "precision " + this.floatPrecision + " float;",
+            "",
+            "in vec2 " + "uv" /* UV */ + ";",
+            "out vec4 " + "fragColor" /* OUT */ + ";",
+        ].join("\n");
+    }
+    getGlslFragmentShaderPreMainDeclarationSource() {
+        var source = "";
+        for (var i = 0; i < this.glslVariables.length; i++) {
+            const varSource = this.glslVariables[i].getGlslPreMainDeclaration(this);
+            if (varSource !== null) {
+                source += varSource + "\n";
+            }
+        }
+        return source;
+    }
+    getGlslFragmentShaderMainDeclarationSource() {
+        var source = "";
+        for (var i = 0; i < this.glslVariables.length; i++) {
+            const varSource = this.glslVariables[i].getGlslMainDeclaration();
+            if (varSource !== null) {
+                source += varSource + "\n";
+            }
+        }
+        return source;
+    }
+}
+class GlslContext {
+    constructor(width, height) {
+        this.shaderFinished = false;
+        this.resultPixelArray = null;
         this.resultDataUrl = null;
-        this.glCanvas = document.createElement("canvas");
-        this.glCanvas.width = WIDTH;
-        this.glCanvas.height = HEIGHT;
-        //document.body.appendChild(glCanvas);
-        this.glContext = this.glCanvas.getContext("webgl2");
+        this.resultImage = null;
+        this.shaderSourceGenerator = new GlslShaderSourceGenerator();
+        this.createGlContext(width, height);
         this.resultPixelArray = new Uint8Array(this.glCanvas.width * this.glCanvas.height * 4);
-        this.shaderVariableCollection = new ShaderVariableCollection();
     }
-    purge() {
-        console.log("Purging connection to gpu.");
-        this.glContext.getExtension("WEBGL_lose_context").loseContext();
+    addGlslVariable(glslVariable) {
+        this.shaderSourceGenerator.addGlslVariable(glslVariable);
     }
-    getResultJsImageObject(onloadCallback) {
+    renderFramebuffer(image) {
+        throw new Error("Method not implemented.");
+    }
+    renderImage(image, onloadFunction) {
+        if (!this.shaderFinished) {
+            this.runShader(image);
+        }
         if (this.resultImage === null) {
             this.resultImage = new Image();
-            this.resultImage.addEventListener("load", onloadCallback);
-            this.resultImage.src = this.getResultAsDataUrl();
+            //this.resultImage.crossOrigin = "anonymous";
+            this.resultImage.addEventListener("load", onloadFunction);
+            this.resultImage.src = this.renderDataUrl(image);
         }
         return this.resultImage;
     }
-    getResultPixelArray() {
-        if (!this.shaderRun) {
-            this.runShader();
+    renderDataUrl(image) {
+        if (!this.shaderFinished) {
+            this.runShader(image);
         }
-        return this.resultPixelArray;
-    }
-    getResultAsDataUrl() {
-        if (!this.shaderRun) {
-            this.runShader();
-        }
-        if (this.resultDataUrl == null) {
+        if (this.resultDataUrl === null) {
             this.resultDataUrl = this.glCanvas.toDataURL();
         }
         return this.resultDataUrl;
     }
-    runShader() {
-        this.loadShaderImagesIntoShader();
-        var framePositionLocation = this.glContext.getAttribLocation(this.getShaderProgram(), ImageShaderConstructor.inputPosCoordinate);
-        var frameTextureLocation = this.glContext.getAttribLocation(this.getShaderProgram(), ImageShaderConstructor.inputTexCoordinate);
+    renderPixelArray(image) {
+        if (!this.shaderFinished) {
+            this.runShader(image);
+        }
+        return this.resultPixelArray;
+    }
+    runShader(resultImage) {
+        this.glShaderProgram = this.createShaderProgram(resultImage);
+        this.glContext.useProgram(this.glShaderProgram);
+        this.loadGlslTextures(this.shaderSourceGenerator.getGlslTextures());
+        uiLog("Rendering on gpu.");
+        var framePositionLocation = this.glContext.getAttribLocation(this.glShaderProgram, "pos" /* POS */);
+        var frameTextureLocation = this.glContext.getAttribLocation(this.glShaderProgram, "tex" /* TEX */);
         const FLOAT_SIZE = Float32Array.BYTES_PER_ELEMENT;
         const frameVertices = [-1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1, -1];
         const frameTextCoords = [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1];
@@ -131,8 +652,8 @@ class ImageShaderConstructor {
         this.glContext.enableVertexAttribArray(frameTextureLocation);
         this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, null);
         this.glContext.bindVertexArray(null);
-        this.glContext.useProgram(this.getShaderProgram());
-        this.glContext.viewport(0, 0, this.glContext.canvas.width, this.glContext.canvas.height);
+        //this.glContext.useProgram(this.glShaderProgram);
+        this.glContext.viewport(0, 0, this.glCanvas.width, this.glCanvas.height);
         this.glContext.clearColor(0, 0, 0, 0);
         this.glContext.clear(this.glContext.COLOR_BUFFER_BIT | this.glContext.DEPTH_BUFFER_BIT);
         this.glContext.blendFunc(this.glContext.SRC_ALPHA, this.glContext.ONE);
@@ -142,493 +663,42 @@ class ImageShaderConstructor {
         this.glContext.drawArrays(this.glContext.TRIANGLES, 0, 6);
         this.glContext.bindVertexArray(null);
         this.glContext.readPixels(0, 0, this.glCanvas.width, this.glCanvas.height, this.glContext.RGBA, this.glContext.UNSIGNED_BYTE, this.resultPixelArray);
+        this.glContext.flush();
         this.glContext.finish();
-        this.shaderRun = true;
+        this.shaderFinished = true;
     }
-    compileShaderProgram() {
-        for (var i = 0; this.uniforms.length; i++) {
-            this.uniforms[i].setShaderProgram(this.getShaderProgram());
+    createGlContext(width, height) {
+        this.glCanvas = document.createElement("canvas");
+        this.glCanvas.width = width;
+        this.glCanvas.height = height;
+        this.glContext = this.glCanvas.getContext("webgl2");
+    }
+    createShaderProgram(resultImage) {
+        var vertexShader = this.glContext.createShader(this.glContext.VERTEX_SHADER);
+        var fragmentShader = this.glContext.createShader(this.glContext.FRAGMENT_SHADER);
+        const vertexShaderSource = this.shaderSourceGenerator.getGlslVertexSource();
+        const fragmentShaderSource = this.shaderSourceGenerator.getGlslFragmentSource(resultImage);
+        //uiLog(vertexShaderSource);
+        //uiLog(fragmentShaderSource);
+        this.glContext.shaderSource(vertexShader, vertexShaderSource);
+        this.glContext.shaderSource(fragmentShader, fragmentShaderSource);
+        uiLog("Compiling shader program.");
+        this.glContext.compileShader(vertexShader);
+        this.glContext.compileShader(fragmentShader);
+        var shaderProgram = this.glContext.createProgram();
+        this.glContext.attachShader(shaderProgram, vertexShader);
+        this.glContext.attachShader(shaderProgram, fragmentShader);
+        this.glContext.linkProgram(shaderProgram);
+        return shaderProgram;
+    }
+    loadGlslTextures(glslTextures) {
+        uiLog("Loading " + glslTextures.length + " image(s) for gpu.");
+        for (var i = 0; i < glslTextures.length; i++) {
+            glslTextures[i].loadTextureIntoShaderProgram(this.glContext, this.glShaderProgram, i);
         }
     }
-    getShaderProgram() {
-        if (this.shaderProgram == null) {
-            var vertexShader = this.glContext.createShader(this.glContext.VERTEX_SHADER);
-            var fragmentShader = this.glContext.createShader(this.glContext.FRAGMENT_SHADER);
-            this.glContext.shaderSource(vertexShader, this.getVertexShaderSource());
-            this.glContext.shaderSource(fragmentShader, this.getFragmentShaderSource());
-            console.log("Compiling shader program.");
-            this.glContext.compileShader(vertexShader);
-            this.glContext.compileShader(fragmentShader);
-            console.log("Linking shader program.");
-            var shaderProgram = this.glContext.createProgram();
-            this.glContext.attachShader(shaderProgram, vertexShader);
-            this.glContext.attachShader(shaderProgram, fragmentShader);
-            this.glContext.linkProgram(shaderProgram);
-            this.shaderProgram = shaderProgram;
-        }
-        return this.shaderProgram;
-    }
-    loadShaderImagesIntoShader() {
-        this.glContext.bindTexture(this.glContext.TEXTURE_2D, null);
-        this.glContext.useProgram(this.getShaderProgram());
-        this.glContext.clear(this.glContext.COLOR_BUFFER_BIT | this.glContext.DEPTH_BUFFER_BIT);
-        console.log("Loading images for gpu.");
-        for (var i = 0; i < this.shaderVariableCollection.getShaderImages().length; i++) {
-            this.glContext.activeTexture(this.glContext.TEXTURE0 +
-                this.shaderVariableCollection.getShaderImages()[i].getCount() +
-                1);
-            this.glContext.bindTexture(this.glContext.TEXTURE_2D, this.shaderVariableCollection.getShaderImages()[i].getTexture());
-            var uniformPointer = this.glContext.getUniformLocation(this.getShaderProgram(), this.shaderVariableCollection
-                .getShaderImages()[i].getUniformVariable());
-            this.glContext.uniform1i(uniformPointer, this.shaderVariableCollection.getShaderImages()[i].getCount() + 1);
-        }
-    }
-    addCalculation(operant1, operant2, operator) {
-        var calculation = new ShaderCalculation(operant1, operant2, operator, this.shaderVariableCollection, this.glContext);
-        this.calculations.push(calculation);
-        return calculation.getResult();
-    }
-    addSieve(image1, factor1, conditionOperator, image2, factor2) {
-        var sieve = new ShaderSieve(image1, factor1, conditionOperator, image2, factor2, this.shaderVariableCollection, this.glContext);
-        this.sieves.push(sieve);
-        return sieve.getResult();
-    }
-    addUniform(value) {
-        const uniform = new ShaderUniform(this.glContext);
-        this.uniforms.push(uniform);
-        return uniform;
-    }
-    getVertexShaderSource() {
-        return [
-            "#version 300 es",
-            "",
-            "in vec3 " + ImageShaderConstructor.inputPosCoordinate + ";",
-            "in vec2 " + ImageShaderConstructor.inputTexCoordinate + ";",
-            "",
-            "out vec2 " + ImageShaderConstructor.uvCoordinate + ";",
-            "",
-            "void main() {",
-            ImageShaderConstructor.uvCoordinate +
-                " = " +
-                ImageShaderConstructor.inputTexCoordinate +
-                ";",
-            "gl_Position = vec4(" +
-                ImageShaderConstructor.inputPosCoordinate +
-                ", 1.0);",
-            "}",
-        ].join("\n");
-    }
-    getFragmentShaderSource() {
-        var fragmentShaderSource = [];
-        fragmentShaderSource.push(this.getPreFragmentShaderSource());
-        fragmentShaderSource.push(this.getUniformDeclarationsSource());
-        fragmentShaderSource.push(this.getVoidMainFunction());
-        console.log(fragmentShaderSource.join("\n"));
-        return fragmentShaderSource.join("\n");
-    }
-    getVoidMainFunction() {
-        var mainSource = [""];
-        mainSource.push("void main() {");
-        mainSource.push(this.getColorDeclarationSource());
-        mainSource.push(this.getCalculationSource());
-        mainSource.push("}");
-        return mainSource.join("\n");
-    }
-    getPreFragmentShaderSource() {
-        return [
-            "#version 300 es",
-            "precision " + this.floatPrecision + " float;",
-            "",
-            "in vec2 " + ImageShaderConstructor.uvCoordinate + ";",
-            "out vec4 " + ImageShaderConstructor.fragmentColor + ";",
-        ].join("\n");
-    }
-    getUniformDeclarationsSource() {
-        var uniformDeclarationsSource = [""];
-        for (var i = 0; i < this.shaderVariableCollection.getShaderImages().length; i++) {
-            uniformDeclarationsSource.push("uniform sampler2D " +
-                this.shaderVariableCollection
-                    .getShaderImages()[i].getUniformVariable() +
-                ";");
-        }
-        for (var i = 0; i < this.uniforms.length; i++) {
-            uniformDeclarationsSource.push(this.uniforms[i].getDeclarationShaderString());
-        }
-        return uniformDeclarationsSource.join("\n");
-    }
-    getColorDeclarationSource() {
-        var colorDeclarationSource = [];
-        for (var i = 0; i < this.shaderVariableCollection.getShaderImages().length; i++) {
-            colorDeclarationSource.push("vec4 " +
-                this.shaderVariableCollection
-                    .getShaderImages()[i].getColorVariable() +
-                " = " +
-                "texture(" +
-                this.shaderVariableCollection
-                    .getShaderImages()[i].getUniformVariable() +
-                ", " +
-                ImageShaderConstructor.uvCoordinate +
-                ");");
-            if (this.onlyLuminance) {
-                colorDeclarationSource.push("float l_" +
-                    this.shaderVariableCollection
-                        .getShaderImages()[i].getColorVariable() +
-                    " = " +
-                    "(" +
-                    this.shaderVariableCollection
-                        .getShaderImages()[i].getColorVariable() +
-                    ".r + " +
-                    this.shaderVariableCollection
-                        .getShaderImages()[i].getColorVariable() +
-                    ".g + " +
-                    this.shaderVariableCollection
-                        .getShaderImages()[i].getColorVariable() +
-                    ".b) / 3.0;");
-                colorDeclarationSource.push(this.shaderVariableCollection
-                    .getShaderImages()[i].getColorVariable() +
-                    " = " +
-                    "vec4(" +
-                    "l_" +
-                    this.shaderVariableCollection
-                        .getShaderImages()[i].getColorVariable() +
-                    ", " +
-                    "l_" +
-                    this.shaderVariableCollection
-                        .getShaderImages()[i].getColorVariable() +
-                    ", " +
-                    "l_" +
-                    this.shaderVariableCollection
-                        .getShaderImages()[i].getColorVariable() +
-                    ", 1.0);");
-            }
-        }
-        return colorDeclarationSource.join("\n");
-    }
-    setResult(resultValue) {
-        resultValue = new ShaderVariable(resultValue, this.shaderVariableCollection, this.glContext);
-        for (var channel = 0; channel < 4; channel++) {
-            this.result[channel] = resultValue.getShaderStringOfChannel(channel);
-        }
-    }
-    setChannelResult(resultValue, channel) {
-        resultValue = new ShaderVariable(resultValue, this.shaderVariableCollection, this.glContext);
-        this.result[channel] = resultValue.getShaderStringOfChannel(channel);
-    }
-    getCalculationSource() {
-        var calculationSource = [""];
-        for (var i = 0; i < this.calculations.length; i++) {
-            calculationSource.push(this.calculations[i].getShaderString());
-        }
-        for (var i = 0; i < this.sieves.length; i++) {
-            calculationSource.push(this.sieves[i].getShaderString());
-        }
-        calculationSource.push(ImageShaderConstructor.fragmentColor +
-            " = vec4(" +
-            this.result.join(", ") +
-            ");");
-        return calculationSource.join("\n");
+    purge() {
+        uiLog("Purging connection to gpu.");
+        this.glContext.getExtension("WEBGL_lose_context").loseContext();
     }
 }
-ImageShaderConstructor.inputPosCoordinate = "inputPosCoordinate";
-ImageShaderConstructor.inputTexCoordinate = "inputTexCoordinate";
-ImageShaderConstructor.uvCoordinate = "uv";
-ImageShaderConstructor.tmpFragColor = "tmpFragColor";
-ImageShaderConstructor.fragmentColor = "fragColor";
-class ShaderCalculation {
-    constructor(operant1, operant2, operator, shaderVariableCollection, glContext) {
-        this.operant1 = this.castShaderVariable(operant1, shaderVariableCollection, glContext);
-        this.operant2 = this.castShaderVariable(operant2, shaderVariableCollection, glContext);
-        this.operator = operator;
-        this.result = new ShaderVariable(null, shaderVariableCollection, glContext, this.getResultType());
-    }
-    castShaderVariable(castFrom, shaderVariableCollection, glContext) {
-        if (castFrom instanceof ShaderVariable) {
-            return castFrom;
-        }
-        else {
-            return new ShaderVariable(castFrom, shaderVariableCollection, glContext);
-        }
-    }
-    getResult() {
-        return this.result;
-    }
-    getResultType() {
-        if (this.operator === ".") {
-            return "float";
-        }
-        if (this.operant1.isImage() || this.operant2.isImage()) {
-            return "vec4";
-        }
-        else if (this.operant1.isFloat() && this.operant2.isFloat()) {
-            return "float";
-        }
-    }
-    getShaderString() {
-        if (this.operator == "max" || this.operator == "min") {
-            return (this.getResultType() +
-                " " +
-                this.result.getShaderString() +
-                " = " +
-                this.operator +
-                "(" +
-                this.operant1.getShaderString() +
-                ", " +
-                this.operant2.getShaderString() +
-                ");");
-        }
-        else if (this.operator == ".") {
-            return ("float " +
-                this.result.getShaderString() +
-                " = " +
-                this.operant1.getShaderString() +
-                this.operator +
-                this.operant2.getShaderString() +
-                ";");
-        }
-        else {
-            return (this.getResultType() +
-                " " +
-                this.result.getShaderString() +
-                " = " +
-                this.operant1.getShaderString() +
-                " " +
-                this.operator +
-                " " +
-                this.operant2.getShaderString() +
-                ";");
-        }
-    }
-}
-class ShaderSieve {
-    constructor(compare1, factor1, conditionOperator, compare2, factor2, shaderVariableCollection, glContext) {
-        this.compare1 = new ShaderVariable(compare1, shaderVariableCollection, glContext);
-        this.compare2 = new ShaderVariable(compare2, shaderVariableCollection, glContext);
-        this.factor1 = factor1;
-        this.factor2 = factor2;
-        this.condition = conditionOperator;
-        this.result = UniqueVariable.getName("s_color");
-    }
-    getResult() {
-        return this.result;
-    }
-    getShaderString() {
-        return [
-            "vec4 " + this.result + " = vec4(0.0, 0.0, 0.0, 1.0);",
-            "if(" +
-                this.compare1.getShaderStringOfChannel(0) +
-                " * " +
-                this.factor1 +
-                " " +
-                this.condition +
-                " " +
-                this.compare2.getShaderStringOfChannel(0) +
-                " * " +
-                this.factor2 +
-                ") {",
-            this.result + " = vec4(0.0, 0.0, 0.0, 0.0);",
-            "}",
-        ].join("\n");
-    }
-}
-class ShaderVariableCollection {
-    constructor() {
-        this.shaderImages = [];
-    }
-    getShaderImages() {
-        return this.shaderImages;
-    }
-    addShaderImage(shaderImage) {
-        this.shaderImages.push(shaderImage);
-    }
-}
-class ShaderVariable {
-    constructor(value, collection, glContext, manuallySetType = null) {
-        if (!this.cast(value)) {
-            this.value = value;
-            this.collection = collection;
-            this.manuallySetType = manuallySetType;
-            this.glContext = glContext;
-            this.shaderString = null;
-            this.shaderImage = null;
-            if (this.value == null && this.manuallySetType == null) {
-                console.error("If shader variable value is not provided, manually type has to be set.");
-            }
-            if (this.value != null && this.manuallySetType != null) {
-                console.warn("If shader variable value is provided, manually type should not be set.");
-                this.manuallySetType = null;
-            }
-            if (this.value == null) {
-                this.value = UniqueVariable.getName("var_" + manuallySetType);
-            }
-            if (this.isImageWithData()) {
-                this.setAsShaderImage();
-            }
-        }
-    }
-    cast(castFrom) {
-        if (castFrom instanceof ShaderVariable) {
-            this.value = castFrom.value;
-            this.collection = castFrom.collection;
-            this.manuallySetType = castFrom.manuallySetType;
-            this.glContext = castFrom.glContext;
-            this.shaderString = castFrom.shaderString;
-            this.shaderImage = castFrom.shaderImage;
-            return true;
-        }
-        return false;
-    }
-    setAsShaderImage() {
-        for (var i = 0; i < this.collection.getShaderImages().length; i++) {
-            if (this.collection.getShaderImages()[i].getJsImageObject() ==
-                this.value) {
-                this.shaderImage = this.collection.getShaderImages()[i];
-            }
-        }
-        if (this.shaderImage == null) {
-            this.shaderImage = new ShaderImage(this.value, this.glContext);
-            this.collection.addShaderImage(this.shaderImage);
-        }
-    }
-    isStringWithData() {
-        return this.value instanceof String || typeof this.value === "string";
-    }
-    isImage() {
-        return (this.value instanceof HTMLImageElement ||
-            this.manuallySetType == "vec4");
-    }
-    isFloat() {
-        return (!isNaN(this.value) ||
-            typeof this.value == "number" ||
-            this.manuallySetType == "float");
-    }
-    isImageWithData() {
-        return this.value instanceof HTMLImageElement;
-    }
-    isFloatWithData() {
-        return !isNaN(this.value) || typeof this.value == "number";
-    }
-    isUnset() {
-        return this.manuallySetType != null;
-    }
-    getValue() {
-        return this.value;
-    }
-    getShaderStringFromType(type) {
-        switch (type) {
-            case "vec4":
-                return this.shaderImage.getShaderString();
-            case "float":
-                return this.value.toFixed(1);
-            case "name":
-                return this.value;
-            default:
-                console.warn("Shader variable type not implemented.");
-        }
-    }
-    getShaderString() {
-        if (this.shaderString == null) {
-            if (this.isUnset() || this.isStringWithData()) {
-                this.shaderString = this.getShaderStringFromType("name");
-            }
-            else if (this.isImageWithData()) {
-                this.shaderString = this.getShaderStringFromType("vec4");
-            }
-            else if (this.isFloatWithData()) {
-                this.shaderString = this.getShaderStringFromType("float");
-            }
-        }
-        return this.shaderString;
-    }
-    getShaderStringOfChannel(channel) {
-        if (this.isImage()) {
-            return this.getShaderString() + "." + COLOR_CHANNELS[channel];
-        }
-        else {
-            return this.getShaderString();
-        }
-    }
-}
-class ShaderImage {
-    constructor(jsImageObject, glContext) {
-        this.jsImageObject = jsImageObject;
-        this.glContext = glContext;
-        this.imageVariable = UniqueVariable.getName("uniform");
-        this.colorVariable = UniqueVariable.getName("color");
-        this.texture = this.loadTexture();
-        this.count = ShaderImage.count;
-        ShaderImage.count++;
-    }
-    loadTexture() {
-        var texture = this.glContext.createTexture();
-        this.glContext.bindTexture(this.glContext.TEXTURE_2D, texture);
-        this.glContext.texParameteri(this.glContext.TEXTURE_2D, this.glContext.TEXTURE_WRAP_S, this.glContext.CLAMP_TO_EDGE);
-        this.glContext.texParameteri(this.glContext.TEXTURE_2D, this.glContext.TEXTURE_WRAP_T, this.glContext.CLAMP_TO_EDGE);
-        this.glContext.texParameteri(this.glContext.TEXTURE_2D, this.glContext.TEXTURE_MIN_FILTER, this.glContext.LINEAR);
-        this.glContext.texParameteri(this.glContext.TEXTURE_2D, this.glContext.TEXTURE_MAG_FILTER, this.glContext.LINEAR);
-        this.glContext.texImage2D(this.glContext.TEXTURE_2D, 0, this.glContext.RGBA, this.glContext.RGBA, this.glContext.UNSIGNED_BYTE, this.jsImageObject);
-        return texture;
-    }
-    getTexture() {
-        return this.texture;
-    }
-    getCount() {
-        return this.count;
-    }
-    getUniformVariable() {
-        return this.imageVariable;
-    }
-    getColorVariable() {
-        return this.colorVariable;
-    }
-    getJsImageObject() {
-        return this.jsImageObject;
-    }
-    getShaderString() {
-        return this.getColorVariable();
-    }
-}
-ShaderImage.count = 0;
-class ShaderUniform {
-    constructor(glContext) {
-        this.value = null;
-        this.uniformName = UniqueVariable.getName("uniform");
-    }
-    setValue(value) {
-        if (this.uniformPointer === null) {
-            console.warn("Compile shader before setting uniform.");
-        }
-        else {
-            this.glContext.uniformMatrix3fv(this.uniformPointer, false, new Float32Array(value.getAsArray()));
-            this.value = value;
-        }
-    }
-    setShaderProgram(shaderProgram) {
-        this.uniformPointer = this.glContext.getUniformLocation(shaderProgram, this.uniformName);
-    }
-    getTypeShaderString() {
-        return "mat3";
-    }
-    getShaderString() {
-        return this.uniformName;
-    }
-    getDeclarationShaderString() {
-        return ("uniform " +
-            this.getTypeShaderString() +
-            " " +
-            this.getShaderString() +
-            ";");
-    }
-}
-class UniqueVariable {
-    static get uniqueNumber() {
-        return UniqueVariable.uniqueImageNumber;
-    }
-    static set uniqueNumber(newValue) {
-        UniqueVariable.uniqueImageNumber = newValue;
-    }
-    static getName(prefix = "variable") {
-        UniqueVariable.uniqueNumber++;
-        return (prefix.toString() + "_" + UniqueVariable.uniqueImageNumber.toString());
-    }
-}
-UniqueVariable.uniqueImageNumber = 0;

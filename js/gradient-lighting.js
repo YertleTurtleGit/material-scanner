@@ -17,7 +17,7 @@ class GradientLighting {
         const width = this.gradientCanvas.width;
         const height = this.gradientCanvas.height;
         this.gradientCanvasContext.clearRect(0, 0, width, height);
-        if (degree != null) {
+        if (degree !== null) {
             const gradient = this.getBestFitGradient(this.gradientCanvas, this.gradientCanvasContext, degree, ["white", "black"]);
             this.gradientCanvasContext.fillStyle = gradient;
         }

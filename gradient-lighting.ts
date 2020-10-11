@@ -24,7 +24,7 @@ class GradientLighting {
 
       this.gradientCanvasContext.clearRect(0, 0, width, height);
 
-      if (degree != null) {
+      if (degree !== null) {
          const gradient = this.getBestFitGradient(
             this.gradientCanvas,
             this.gradientCanvasContext,
