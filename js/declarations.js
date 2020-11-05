@@ -40,7 +40,7 @@ const POINT_CLOUD_FILE_SUFFIX = "point-cloud";
 The depth factor describes a multiplicand of the z-coordinate
 to fit the relation to x- and y-coordinates.
 */
-const DEPTH_FACTOR = 0.025;
+const DEPTH_FACTOR = 0.0125;
 /*
 The point cloud sampling rate describes the amount of data used.
 When set to 100, the point cloud vertex count equates to the image pixel count.

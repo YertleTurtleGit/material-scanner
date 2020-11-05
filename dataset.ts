@@ -238,6 +238,7 @@ class TestInput {
       this.loadedImages++;
       this.dataInput.inputImage(imageDegree, image);
       if (this.loadedImages === LIGHTING_AZIMUTHAL_ANGLES.length) {
+         INPUT_DROP_AREA.remove();
          setTimeout(this.testDataLoadedCallback, 0);
       }
    }
@@ -377,7 +378,7 @@ class DropInput {
       this.imagesLoaded++;
       image.removeEventListener("load", this.imageLoaded.bind(this));
       this.dataInput.inputImage(imageDegree, image);
-      if (this.imagesLoaded == this.lightingCoordinates.length) {
+      if (this.imagesLoaded === this.lightingCoordinates.length) {
          setTimeout(this.droppedDataLoadedCallback, 0);
       }
    }
