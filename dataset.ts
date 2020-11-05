@@ -224,6 +224,7 @@ class TestInput {
    constructor(dataInput: DataInput, testDataLoadedCallback: TimerHandler) {
       this.dataInput = dataInput;
       this.testDataLoadedCallback = testDataLoadedCallback;
+      INPUT_DROP_AREA.remove();
       this.loadAllImages();
    }
 
@@ -238,7 +239,6 @@ class TestInput {
       this.loadedImages++;
       this.dataInput.inputImage(imageDegree, image);
       if (this.loadedImages === LIGHTING_AZIMUTHAL_ANGLES.length) {
-         INPUT_DROP_AREA.remove();
          setTimeout(this.testDataLoadedCallback, 0);
       }
    }
