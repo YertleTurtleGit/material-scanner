@@ -123,6 +123,7 @@ class TestInput {
         this.dataInput = dataInput;
         this.testDataLoadedCallback = testDataLoadedCallback;
         INPUT_DROP_AREA.remove();
+        LOADING_AREA.style.display = "block";
         this.loadAllImages();
     }
     getObjectName() {
