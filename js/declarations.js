@@ -51,11 +51,99 @@ The resolution used when capturing data with a webcam.
 */
 const WEBCAM_RESOLUTION = [800, 600];
 const WEBCAM_POLAR_ANGLE = 45;
-const GPU_PRECISION = "highp" /* HIGH */;
-/*
-The color channels array is used to represent the used color channels.
-*/
-const COLOR_CHANNELS = ["r", "g", "b", "a"];
+const FLOAT_PRECISION = "highp" /* HIGH */;
+const LUMINANCE_CHANNEL_QUANTIFIER = [
+    1 / 3,
+    1 / 3,
+    1 / 3,
+];
+var SYMBOL;
+(function (SYMBOL) {
+    SYMBOL["ADD"] = " + ";
+    SYMBOL["SUBTRACT"] = " - ";
+    SYMBOL["MULTIPLY"] = " * ";
+    SYMBOL["DIVIDE"] = " / ";
+})(SYMBOL || (SYMBOL = {}));
+var METHOD;
+(function (METHOD) {
+    METHOD["MAXIMUM"] = "max";
+    METHOD["MINIMUM"] = "min";
+    METHOD["INVERSE"] = "inverse";
+    METHOD["NORMALIZE"] = "normalize";
+    METHOD["LENGTH"] = "length";
+    METHOD["SINE"] = "sin";
+    METHOD["COSINE"] = "cos";
+    METHOD["RADIANS"] = "radians";
+})(METHOD || (METHOD = {}));
+var CUSTOM;
+(function (CUSTOM) {
+    CUSTOM["LUMINANCE"] = "luminance";
+    CUSTOM["CHANNEL"] = "channel";
+    CUSTOM["VEC3_TO_VEC4"] = "vec3_to_vec4";
+})(CUSTOM || (CUSTOM = {}));
+class GLSL_OPERATORS {
+    constructor() { }
+}
+GLSL_OPERATORS.ADD = {
+    NAME: SYMBOL.ADD,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.SUBTRACT = {
+    NAME: SYMBOL.SUBTRACT,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.MULTIPLY = {
+    NAME: SYMBOL.MULTIPLY,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.DIVIDE = {
+    NAME: SYMBOL.DIVIDE,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.MAXIMUM = {
+    NAME: METHOD.MAXIMUM,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.MINIMUM = {
+    NAME: METHOD.MINIMUM,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.INVERSE = {
+    NAME: METHOD.INVERSE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.NORMALIZE = {
+    NAME: METHOD.NORMALIZE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.LENGTH = {
+    NAME: METHOD.LENGTH,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.SINE = {
+    NAME: METHOD.SINE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.COSINE = {
+    NAME: METHOD.COSINE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.RADIANS = {
+    NAME: METHOD.RADIANS,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.LUMINANCE = {
+    NAME: CUSTOM.LUMINANCE,
+    TYPE: CUSTOM,
+};
+GLSL_OPERATORS.CHANNEL = {
+    NAME: CUSTOM.CHANNEL,
+    TYPE: CUSTOM,
+};
+GLSL_OPERATORS.VEC3_TO_VEC4 = {
+    NAME: CUSTOM.VEC3_TO_VEC4,
+    TYPE: CUSTOM,
+};
 /*
 DOM element definitions.
 */

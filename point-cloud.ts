@@ -113,25 +113,29 @@ class PointCloud {
       uiLog("Applying local gradient factor.");
       uiBaseLayer++;
 
-      const ic = new ImageCalc();
-      const icNormalMap = ic.loadImage(this.normalMap.getAsJsImageObject());
+      var pointCloudShader = new Shader();
+      pointCloudShader.bind();
 
-      const red = ic.getChannelFromImage(icNormalMap, COLOR_CHANNEL.RED);
-      const green = ic.getChannelFromImage(icNormalMap, COLOR_CHANNEL.GREEN);
-      const blue = ic.getChannelFromImage(icNormalMap, COLOR_CHANNEL.BLUE);
+      const glslNormalMap = GlslImage.load(this.normalMap.getAsJsImageObject());
 
-      const result = ic.getImageFromChannels(
-         ic.divide(red, blue),
-         ic.divide(green, blue),
-         ic.loadNumber(0),
-         ic.loadNumber(1)
-      );
+      const red = glslNormalMap.channel(GLSL_CHANNEL.RED);
+      const green = glslNormalMap.channel(GLSL_CHANNEL.GREEN);
+      const blue = glslNormalMap.channel(GLSL_CHANNEL.BLUE);
 
-      const gradientPixelArray = ic.renderToPixelArray(result);
-      ic.purge();
+      const result = new GlslVector3([
+         red.divideFloat(blue),
+         green.divideFloat(blue),
+         new GlslFloat(0),
+      ]);
+
+      const gradientPixelArray = GlslRendering.render(
+         result.getVector4()
+      ).getPixelArray();
+
+      pointCloudShader.purge();
 
       uiBaseLayer--;
-      uiLog("Calculating anisotropic Riemann integral (1/2).");
+      uiLog("Calculating anisotropic integrals.");
 
       this.zValues = Array(this.dimensions[0] * this.dimensions[1]).fill(0);
 
@@ -152,8 +156,8 @@ class PointCloud {
 
             const baseColorIndex = index * 4;
             const baseColorIndexI = indexI * 4;
-            const colorIndex = baseColorIndex + COLOR_CHANNELS.indexOf("r");
-            const colorIndexI = baseColorIndexI + COLOR_CHANNELS.indexOf("r");
+            const colorIndex = baseColorIndex + GLSL_CHANNEL.RED;
+            const colorIndexI = baseColorIndexI + GLSL_CHANNEL.RED;
 
             const gradient = gradientPixelArray[colorIndex];
             const gradientI = gradientPixelArray[colorIndexI];
@@ -164,8 +168,6 @@ class PointCloud {
             this.zValues[index] += zLineOffsetI - zLineOffset;
          }
       }
-
-      uiLog("Calculating anisotropic Riemann integral (2/2).");
 
       for (var x = 0; x < this.dimensions[0]; x++) {
          zLineOffset = 0;
@@ -178,8 +180,8 @@ class PointCloud {
 
             const baseColorIndex = index * 4;
             const baseColorIndexI = indexI * 4;
-            const colorIndex = baseColorIndex + COLOR_CHANNELS.indexOf("g");
-            const colorIndexI = baseColorIndexI + COLOR_CHANNELS.indexOf("g");
+            const colorIndex = baseColorIndex + GLSL_CHANNEL.GREEN;
+            const colorIndexI = baseColorIndexI + GLSL_CHANNEL.GREEN;
 
             const gradient = gradientPixelArray[colorIndex];
             const gradientI = gradientPixelArray[colorIndexI];
@@ -329,10 +331,10 @@ class PointCloudRenderer {
          " float cosRotY = cos(rot);",
          " ",
          " float sinRotX = " +
-            GlslNumber.getNumberAsString(Math.sin(xRot)) +
+            GlslFloat.getJsNumberAsString(Math.sin(xRot)) +
             ";",
          " float cosRotX = " +
-            GlslNumber.getNumberAsString(Math.cos(xRot)) +
+            GlslFloat.getJsNumberAsString(Math.cos(xRot)) +
             ";",
          " ",
          " mat3 yRot;",
@@ -362,7 +364,7 @@ class PointCloudRenderer {
       // fragment shader source code
       var fragCode = [
          "#version 300 es",
-         "precision mediump float;",
+         "precision " + GPU_GL_FLOAT_PRECISION.MEDIUM + " float;",
          "",
          "in vec3 f_color;",
          "out vec4 fragColor;",
@@ -403,13 +405,13 @@ class PointCloudRenderer {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertex_buffer);
 
       // Get the attribute location
-      var coord = this.gl.getAttribLocation(shaderProgram, "coordinates");
+      var coordinates = this.gl.getAttribLocation(shaderProgram, "coordinates");
 
       // Point an attribute to the currently bound VBO
-      this.gl.vertexAttribPointer(coord, 3, this.gl.FLOAT, false, 0, 0);
+      this.gl.vertexAttribPointer(coordinates, 3, this.gl.FLOAT, false, 0, 0);
 
       // Enable the attribute
-      this.gl.enableVertexAttribArray(coord);
+      this.gl.enableVertexAttribArray(coordinates);
 
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, color_buffer);
       var color = this.gl.getAttribLocation(shaderProgram, "v_color");

@@ -19,12 +19,12 @@ function allImagesLoaded() {
 function startCalculation() {
    uiLog("Calculating normal map.");
    uiBaseLayer++;
-   calculateNormalMap(calculatePointCloud);
+   calculateNormalMap();
 }
 
-function calculateNormalMap(onloadFunction) {
+function calculateNormalMap() {
    const normalMap = new NormalMap(dataset);
-   normalMap.calculate(onloadFunction.bind(null, normalMap));
+   normalMap.calculate(calculatePointCloud.bind(null, normalMap));
 }
 
 function calculatePointCloud(normalMap: NormalMap) {
@@ -49,6 +49,7 @@ function calculatePointCloud(normalMap: NormalMap) {
    );
    LOADING_AREA.style.display = "none";
    OUTPUT_AREA.style.display = "grid";
+   getColorPixelArray();
    pointCloud.renderPreviewTo(POINT_CLOUD_AREA);
    console.log("Finished.");
 }
@@ -65,18 +66,27 @@ function downloadPointCloud(pointCloud: PointCloud) {
    );
 }
 
+var colorPixelArray: Uint8Array = null;
 function getColorPixelArray() {
-   uiLog("Calculating albedo.");
-   uiBaseLayer++;
-   var ic = new ImageCalc();
-   var images: GlslVariable[] = [];
-   for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
-      images.push(ic.loadImage(dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i])));
+   if (colorPixelArray === null) {
+      uiLog("Calculating albedo.");
+      uiBaseLayer++;
+
+      var albedoShader = new Shader();
+      albedoShader.bind();
+
+      var images: GlslVector4[] = [];
+      for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+         images.push(
+            GlslImage.load(dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i]))
+         );
+      }
+
+      const maxImage = images[0].maximum(...images);
+
+      colorPixelArray = GlslRendering.render(maxImage).getPixelArray();
+
+      albedoShader.purge();
    }
-
-   const maxImage = ic.max(...images);
-
-   const colorPixelArray = ic.renderToPixelArray(maxImage);
-   ic.purge();
    return colorPixelArray;
 }
