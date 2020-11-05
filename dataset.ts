@@ -3,6 +3,7 @@
 const enum DATATYPE {
    WEBCAM = "webcam",
    DROP = "drop",
+   TEST = "test",
 }
 
 class Dataset {
@@ -88,6 +89,20 @@ class Dataset {
 
    private showLoadingArea() {
       LOADING_AREA.style.display = "block";
+   }
+
+   public listenForTestButtonClick(testButton: HTMLElement) {
+      testButton.addEventListener("click", this.testButtonClicked.bind(this));
+   }
+
+   private testButtonClicked() {
+      this.type = DATATYPE.TEST;
+      this.dataInput = new DataInput(this);
+      this.getLightingCoordinates(TEST_POLAR_ANGLE);
+
+      this.dataInput.setInputClass(
+         new TestInput(this.dataInput, this.dataLoaded.bind(this))
+      );
    }
 
    public listenForWebcamButtonClick(
@@ -189,7 +204,7 @@ class DataInput {
       return this.inputClass.getObjectName();
    }
 
-   public setInputClass(inputClass: DropInput | WebcamInput) {
+   public setInputClass(inputClass: DropInput | WebcamInput | TestInput) {
       this.inputClass = inputClass;
    }
 
@@ -198,6 +213,71 @@ class DataInput {
       image: HTMLImageElement
    ) {
       this.dataset.setImage(lightingCoordinate, image);
+   }
+}
+
+class TestInput {
+   private testDataLoadedCallback: TimerHandler;
+   private loadedImages: number = 0;
+   private dataInput: DataInput;
+
+   constructor(dataInput: DataInput, testDataLoadedCallback: TimerHandler) {
+      this.dataInput = dataInput;
+      this.testDataLoadedCallback = testDataLoadedCallback;
+      this.loadAllImages();
+   }
+
+   public getObjectName() {
+      return TEST_OBJECT_NAME;
+   }
+
+   private singleImageLoaded(
+      image: HTMLImageElement,
+      imageDegree: SphericalCoordinate
+   ) {
+      this.loadedImages++;
+      this.dataInput.inputImage(imageDegree, image);
+      if (this.loadedImages === LIGHTING_AZIMUTHAL_ANGLES.length) {
+         setTimeout(this.testDataLoadedCallback, 0);
+      }
+   }
+
+   private loadAllImages() {
+      var polarString = "" + TEST_POLAR_ANGLE;
+      while (polarString.length < 3) {
+         polarString = "0" + polarString;
+      }
+
+      for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+         var azimuthalString = "" + LIGHTING_AZIMUTHAL_ANGLES[i];
+         while (azimuthalString.length < 3) {
+            azimuthalString = "0" + azimuthalString;
+         }
+
+         const fileName =
+            TEST_OBJECT_NAME +
+            "_" +
+            azimuthalString +
+            "_" +
+            polarString +
+            "." +
+            TEST_FILE_EXTENSION;
+
+         var image = new Image();
+         image.addEventListener(
+            "load",
+            this.singleImageLoaded.bind(
+               this,
+               image,
+               new SphericalCoordinate(
+                  LIGHTING_AZIMUTHAL_ANGLES[i],
+                  TEST_POLAR_ANGLE
+               )
+            )
+         );
+         image.crossOrigin = "anonymous";
+         image.src = TEST_DATASET_FOLDER + fileName;
+      }
    }
 }
 

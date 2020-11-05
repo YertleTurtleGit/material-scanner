@@ -5,6 +5,7 @@ document.getElementById("image-names").innerHTML =
         "e.g. testObject_000_000.png";
 const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, allImagesLoaded);
 dataset.listenForDrop(INPUT_DROP_AREA);
+dataset.listenForTestButtonClick(TEST_BUTTON);
 //dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 function allImagesLoaded() {
     INPUT_DROP_AREA.remove();

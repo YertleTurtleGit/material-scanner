@@ -41,6 +41,15 @@ class Dataset {
     showLoadingArea() {
         LOADING_AREA.style.display = "block";
     }
+    listenForTestButtonClick(testButton) {
+        testButton.addEventListener("click", this.testButtonClicked.bind(this));
+    }
+    testButtonClicked() {
+        this.type = "test" /* TEST */;
+        this.dataInput = new DataInput(this);
+        this.getLightingCoordinates(TEST_POLAR_ANGLE);
+        this.dataInput.setInputClass(new TestInput(this.dataInput, this.dataLoaded.bind(this)));
+    }
     listenForWebcamButtonClick(webcamButton, webcamResolution) {
         webcamButton.addEventListener("click", this.webcamButtonClicked.bind(this, webcamResolution), false);
     }
@@ -106,6 +115,47 @@ class DataInput {
     }
     inputImage(lightingCoordinate, image) {
         this.dataset.setImage(lightingCoordinate, image);
+    }
+}
+class TestInput {
+    constructor(dataInput, testDataLoadedCallback) {
+        this.loadedImages = 0;
+        this.dataInput = dataInput;
+        this.testDataLoadedCallback = testDataLoadedCallback;
+        this.loadAllImages();
+    }
+    getObjectName() {
+        return TEST_OBJECT_NAME;
+    }
+    singleImageLoaded(image, imageDegree) {
+        this.loadedImages++;
+        this.dataInput.inputImage(imageDegree, image);
+        if (this.loadedImages === LIGHTING_AZIMUTHAL_ANGLES.length) {
+            setTimeout(this.testDataLoadedCallback, 0);
+        }
+    }
+    loadAllImages() {
+        var polarString = "" + TEST_POLAR_ANGLE;
+        while (polarString.length < 3) {
+            polarString = "0" + polarString;
+        }
+        for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+            var azimuthalString = "" + LIGHTING_AZIMUTHAL_ANGLES[i];
+            while (azimuthalString.length < 3) {
+                azimuthalString = "0" + azimuthalString;
+            }
+            const fileName = TEST_OBJECT_NAME +
+                "_" +
+                azimuthalString +
+                "_" +
+                polarString +
+                "." +
+                TEST_FILE_EXTENSION;
+            var image = new Image();
+            image.addEventListener("load", this.singleImageLoaded.bind(this, image, new SphericalCoordinate(LIGHTING_AZIMUTHAL_ANGLES[i], TEST_POLAR_ANGLE)));
+            image.crossOrigin = "anonymous";
+            image.src = TEST_DATASET_FOLDER + fileName;
+        }
     }
 }
 class DropInput {

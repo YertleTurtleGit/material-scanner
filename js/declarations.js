@@ -51,6 +51,10 @@ The resolution used when capturing data with a webcam.
 */
 const WEBCAM_RESOLUTION = [800, 600];
 const WEBCAM_POLAR_ANGLE = 45;
+const TEST_POLAR_ANGLE = 36;
+const TEST_OBJECT_NAME = "object1";
+const TEST_DATASET_FOLDER = "test_dataset/" + TEST_OBJECT_NAME + "/";
+const TEST_FILE_EXTENSION = "jpg";
 const FLOAT_PRECISION = "highp" /* HIGH */;
 const LUMINANCE_CHANNEL_QUANTIFIER = [
     1 / 3,
@@ -155,6 +159,7 @@ const NORMAL_MAP_BUTTON = document.getElementById("normal-map-button");
 const POINT_CLOUD_AREA = document.getElementById("point-cloud");
 const POINT_CLOUD_BUTTON = document.getElementById("point-cloud-button");
 const CAPTURE_BUTTON = document.getElementById("capture-button");
+const TEST_BUTTON = document.getElementById("test_dataset-button");
 const C_LOG = document.getElementById("c-log");
 /*
 Width and height are set automatically by the input images.
