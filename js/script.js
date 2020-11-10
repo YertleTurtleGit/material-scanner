@@ -6,7 +6,7 @@ document.getElementById("image-names").innerHTML =
 const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, allImagesLoaded);
 dataset.listenForDrop(INPUT_DROP_AREA);
 dataset.listenForTestButtonClick(TEST_BUTTON);
-//dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
+dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 function allImagesLoaded() {
     INPUT_DROP_AREA.remove();
     WIDTH = dataset.getImageDimensions()[0];
@@ -27,7 +27,13 @@ function calculatePointCloud(normalMap) {
     uiBaseLayer--;
     uiLog("Calculating point cloud.");
     uiBaseLayer++;
-    const pointCloud = new PointCloud(normalMap, [WIDTH, HEIGHT], DEPTH_FACTOR, getColorPixelArray());
+    var depthFactor = DEPTH_FACTOR;
+    var samplingRate = POINT_CLOUD_SAMPLING_RATE_PERCENT;
+    if (IS_WEBCAM) {
+        depthFactor = WEBCAM_DEPTH_FACTOR;
+        samplingRate = WEBCAM_POINT_CLOUD_SAMPLING_RATE_PERCENT;
+    }
+    const pointCloud = new PointCloud(normalMap, [WIDTH, HEIGHT], depthFactor, getColorPixelArray(), samplingRate);
     pointCloud.getAsObjString();
     NORMAL_MAP_BUTTON.addEventListener("click", downloadNormalMap.bind(null, normalMap));
     POINT_CLOUD_BUTTON.addEventListener("click", downloadPointCloud.bind(null, pointCloud));

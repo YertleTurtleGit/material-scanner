@@ -40,12 +40,17 @@ const POINT_CLOUD_FILE_SUFFIX = "point-cloud";
 The depth factor describes a multiplicand of the z-coordinate
 to fit the relation to x- and y-coordinates.
 */
-const DEPTH_FACTOR = 0.0125;
+const DEPTH_FACTOR = 0.01;
+const WEBCAM_DEPTH_FACTOR = 0.025;
+const SHOW_ERROR_COLORS = false;
 /*
 The point cloud sampling rate describes the amount of data used.
 When set to 100, the point cloud vertex count equates to the image pixel count.
 */
 const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
+const WEBCAM_POINT_CLOUD_SAMPLING_RATE_PERCENT = 50;
+const MASK_PERCENT = 0;
+const WEBCAM_MASK_PERCENT = 10;
 /*
 The resolution used when capturing data with a webcam.
 */
@@ -167,6 +172,7 @@ All images should have the same resolution.
 */
 var WIDTH;
 var HEIGHT;
+var IS_WEBCAM = false;
 // TODO: Good logging.
 const LOG_ELEMENT = document.getElementById("current-task-info");
 LOG_ELEMENT.style.display = "none";

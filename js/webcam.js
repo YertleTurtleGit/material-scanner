@@ -43,7 +43,10 @@ class Webcam {
         return false;
     }
     takePicture() {
-        this.context.drawImage(this.videoElem, 0, 0, this.width, this.height);
+        this.context.save();
+        this.context.scale(-1, 1);
+        this.context.drawImage(this.videoElem, 0, 0, this.width * -1, this.height);
+        this.context.restore();
         return this.canvas.toDataURL("image/png");
     }
     purgeDisplay() {

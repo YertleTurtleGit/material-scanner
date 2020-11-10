@@ -9,25 +9,25 @@ class SphericalCoordinate {
       this.polarAngle = polarAngleDegree;
    }
 
-   public getAzimuthalAngle() {
+   public getAzimuthalAngle(): number {
       return this.azimuthalAngle;
    }
 
-   public getPolarAngle() {
+   public getPolarAngle(): number {
       return this.polarAngle;
    }
 
-   public getDisplayString() {
+   public getDisplayString(): string {
       this.normalize();
       return "[φ: " + this.azimuthalAngle + ", θ: " + this.polarAngle + "]";
    }
 
-   private normalize() {
+   private normalize(): void {
       this.azimuthalAngle = this.normalizeAngle(this.azimuthalAngle);
       this.polarAngle = this.normalizeAngle(this.polarAngle);
    }
 
-   private normalizeAngle(angle: number) {
+   private normalizeAngle(angle: number): number {
       while (angle >= 360) {
          angle -= 360;
       }
@@ -37,11 +37,11 @@ class SphericalCoordinate {
       return angle;
    }
 
-   private oppositeAngle(angle: number) {
+   private oppositeAngle(angle: number): number {
       return this.normalizeAngle(angle + 180);
    }
 
-   public getOppositeAzimuthalSphericalCoordinate() {
+   public getOppositeAzimuthalSphericalCoordinate(): SphericalCoordinate {
       return new SphericalCoordinate(
          this.oppositeAngle(this.azimuthalAngle),
          this.polarAngle

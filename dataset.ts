@@ -144,7 +144,7 @@ class Dataset {
             return;
          }
       }
-      if (lightingCoordinate === null) {
+      if (lightingCoordinate.getAzimuthalAngle() === null) {
          this.noLightImageObject = jsImageObject;
       }
       console.warn("Not found lighting angle in dataset to set image.");
@@ -394,8 +394,8 @@ class WebcamInput {
    private jsImageObjectList: HTMLImageElement[];
    private lightingCoordinates: SphericalCoordinate[];
    private loadedImages: number;
-   private noLightImageData: string;
-   private noLightImageObject: HTMLImageElement;
+   private noLightImageData: string = null;
+   private noLightImageObject: HTMLImageElement = null;
 
    constructor(
       dataInput: DataInput,
@@ -403,6 +403,7 @@ class WebcamInput {
       lightingCoordinates: SphericalCoordinate[],
       dataLoadedCallback: TimerHandler
    ) {
+      IS_WEBCAM = true;
       this.dataInput = dataInput;
       this.gradientLighting = new GradientLighting();
       this.webcam = new Webcam(resolution, this.startCapture.bind(this));
@@ -412,9 +413,12 @@ class WebcamInput {
       this.jsImageObjectList = Array(lightingCoordinates.length).fill(null);
       this.lightingCoordinates = lightingCoordinates;
       this.loadedImages = 0;
-      this.noLightImageData = null;
-      this.noLightImageObject = null;
+      document.documentElement.requestFullscreen();
       this.webcam.startStreaming();
+   }
+
+   public getObjectName() {
+      return DATATYPE.WEBCAM;
    }
 
    private getNextLightingAngleIndex() {
@@ -431,13 +435,16 @@ class WebcamInput {
       imageData: string
    ) {
       for (var i = 0; i < this.lightingCoordinates.length; i++) {
-         if (this.lightingCoordinates[i] == lightingCoordinate) {
+         if (
+            this.lightingCoordinates[i].getAzimuthalAngle() ===
+            lightingCoordinate.getAzimuthalAngle()
+         ) {
             this.imageDataList[i] = imageData;
             this.capture();
             return i;
          }
       }
-      if (lightingCoordinate === null) {
+      if (lightingCoordinate.getAzimuthalAngle() === null) {
          this.noLightImageData = imageData;
          this.capture();
          return null;
@@ -462,6 +469,7 @@ class WebcamInput {
       this.dataInput.inputImage(lightingCoordinate, image);
       if (this.loadedImages == this.lightingCoordinates.length) {
          console.log("All images from webcam loaded.");
+         document.exitFullscreen();
          setTimeout(this.dataLoadedCallback, 0);
       }
    }
@@ -483,7 +491,11 @@ class WebcamInput {
       const image = new Image();
       image.addEventListener(
          "load",
-         this.imageLoadedFromData.bind(this, image, null)
+         this.imageLoadedFromData.bind(
+            this,
+            image,
+            new SphericalCoordinate(null, null)
+         )
       );
       image.src = this.noLightImageData;
    }
@@ -497,12 +509,15 @@ class WebcamInput {
          ].getAzimuthalAngle();
          this.gradientLighting.display(
             lightingAngle,
-            this.singleCapture.bind(this, lightingAngle)
+            this.singleCapture.bind(
+               this,
+               new SphericalCoordinate(lightingAngle, WEBCAM_POLAR_ANGLE)
+            )
          );
       } else if (this.noLightImageData === null) {
          this.gradientLighting.display(
             null,
-            this.singleCapture.bind(this, null)
+            this.singleCapture.bind(this, new SphericalCoordinate(null, null))
          );
       } else {
          this.gradientLighting.hide();

@@ -139,7 +139,11 @@ class NormalMap {
             reflectionG,
             reflectionB,
         ]);
-        return lights.multiplyVector3(reflection).normalize();
+        return lights
+            .multiplyVector3(reflection)
+            .normalize()
+            .addFloat(new GlslFloat(1))
+            .divideFloat(new GlslFloat(2));
     }
     getLights(originAzimuthalAngle, orthogonalAzimuthalAngle, oppositeAzimuthalAngle) {
         const originLightDir = this.getLightDirectionVector(originAzimuthalAngle);
@@ -176,7 +180,6 @@ class NormalMap {
             sinPolar.multiplyFloat(sinAzimuthal),
             cosPolar,
         ]);
-        var lightDirection = light.normalize();
-        return lightDirection;
+        return light.normalize();
     }
 }

@@ -213,7 +213,11 @@ class NormalMap {
          reflectionB,
       ]);
 
-      return lights.multiplyVector3(reflection).normalize();
+      return lights
+         .multiplyVector3(reflection)
+         .normalize()
+         .addFloat(new GlslFloat(1))
+         .divideFloat(new GlslFloat(2));
    }
 
    private getLights(
@@ -265,8 +269,6 @@ class NormalMap {
          cosPolar,
       ]);
 
-      var lightDirection: GlslVector3 = light.normalize();
-
-      return lightDirection;
+      return light.normalize();
    }
 }
