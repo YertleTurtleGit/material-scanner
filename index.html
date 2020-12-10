@@ -21,18 +21,29 @@
             <button id="capture-button">use webcam (experimental)</button>
          </div>
       </div>
+
       <div id="loading-area">
          <div id="current-task-info" class="center">Loading...</div>
          <div class="lds-dual-ring center"></div>
       </div>
+
       <div id="output-area">
          <div id="normal-map">
             <button id="normal-map-button">save normal map</button>
          </div>
+
          <div id="point-cloud">
+            <label for="vertex-color-select">vertex color:</label>
+            <select name="vertex-color" id="vertex-color-select">
+               <option value="albedo">albedo</option>
+               <option value="normal_mapping">normal mapping</option>
+               <option value="error-proneness">error-proneness</option>
+            </select>
             <button id="point-cloud-button">save point cloud</button>
+            <div id="point-cloud-canvas-area"></div>
          </div>
       </div>
+
       <script src="js/declarations.js"></script>
       <script src="js/spherical-coordinate.js"></script>
       <script src="js/glsl-shader.js"></script>

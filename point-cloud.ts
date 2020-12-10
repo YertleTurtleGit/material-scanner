@@ -3,9 +3,11 @@
 class PointCloud {
    private normalMap: NormalMap;
    private depthFactor: number;
-   private colorPixelArray: Uint8Array;
-   private dimensions: number[];
+
+   private width: number;
+   private height: number;
    private zValues: number[];
+   private meshFaces: [number, number, number][] = [];
    private objString: string;
 
    private errorValues: number[];
@@ -14,31 +16,33 @@ class PointCloud {
    private samplingRate: number;
 
    private gpuVertices: number[];
-   private gpuVertexColors: number[];
+   private gpuVertexAlbedoColors: number[];
+   private gpuVertexNormalColors: number[] = [];
+   private gpuVertexErrorColors: number[] = [];
 
    constructor(
       normalMap: NormalMap,
-      dimensions: number[],
+      width: number,
+      height: number,
       depthFactor: number,
-      colorPixelArray: Uint8Array,
       samplingRate: number
    ) {
       this.normalMap = normalMap;
       this.depthFactor = depthFactor;
-      this.colorPixelArray = colorPixelArray;
-      this.dimensions = dimensions;
+      this.width = width;
+      this.height = height;
       this.zValues = null;
       this.objString = null;
       this.samplingRate = samplingRate;
    }
 
-   downloadObj(filename: string) {
+   downloadObj(filename: string, vertexColorArray: Uint8Array) {
       filename += ".obj";
 
       var element = document.createElement("a");
       element.style.display = "none";
 
-      var blob = new Blob([this.getAsObjString()], {
+      var blob = new Blob([this.getAsObjString(vertexColorArray)], {
          type: "text/plain; charset = utf-8",
       });
 
@@ -54,38 +58,47 @@ class PointCloud {
       element.remove();
    }
 
-   getAsObjString() {
+   getAsObjString(vertexColorArray: Uint8Array) {
       if (this.objString == null) {
          this.gpuVertices = [];
-         this.gpuVertexColors = [];
+         this.gpuVertexAlbedoColors = [];
          this.getZValues();
 
          uiBaseLayer--;
          uiLog("Writing point cloud file string.");
          uiBaseLayer--;
          var objString = "";
+         var objFacesString = "";
          const SAMPLING_RATE_STEP = Math.round(100 / this.samplingRate);
 
-         for (var x = 0; x < this.dimensions[0]; x += SAMPLING_RATE_STEP) {
-            for (var y = 0; y < this.dimensions[1]; y += SAMPLING_RATE_STEP) {
-               const index = x + y * this.dimensions[0];
+         for (var x = 0; x < this.width; x += SAMPLING_RATE_STEP) {
+            for (var y = 0; y < this.height; y += SAMPLING_RATE_STEP) {
+               const index = x + y * this.width;
                if (!(this.getZValues()[index] == null)) {
                   const colorIndex = index * 4;
                   const z = this.getZValues()[index];
 
                   var r: number, g: number, b: number;
 
-                  if (SHOW_ERROR_COLORS) {
-                     const currentErrorColor: number =
-                        (this.errorValues[index] / this.maxError) * 255;
-                     r = currentErrorColor;
-                     g = 255 - currentErrorColor;
-                     b = 0;
-                  } else {
-                     r = this.colorPixelArray[colorIndex];
-                     g = this.colorPixelArray[colorIndex + 1];
-                     b = this.colorPixelArray[colorIndex + 2];
-                  }
+                  const currentErrorColor: number =
+                     this.errorValues[index] / this.maxError;
+                  this.gpuVertexErrorColors.push(
+                     currentErrorColor,
+                     1 - currentErrorColor,
+                     0
+                  );
+
+                  r = vertexColorArray[colorIndex];
+                  g = vertexColorArray[colorIndex + 1];
+                  b = vertexColorArray[colorIndex + 2];
+
+                  const rNormal = this.normalMap.getAsPixelArray()[colorIndex];
+                  const gNormal = this.normalMap.getAsPixelArray()[
+                     colorIndex + 1
+                  ];
+                  const bNormal = this.normalMap.getAsPixelArray()[
+                     colorIndex + 2
+                  ];
 
                   objString +=
                      "v " +
@@ -103,16 +116,39 @@ class PointCloud {
                      "\n";
 
                   this.gpuVertices.push(
-                     x / this.dimensions[0] - 0.5,
-                     y / this.dimensions[0] - 0.5,
-                     z / this.dimensions[0] - 0.5
+                     x / this.width - 0.5,
+                     y / this.width - 0.5,
+                     z / this.width - 0.5
                   );
 
-                  this.gpuVertexColors.push(r / 255, g / 255, b / 255);
+                  this.gpuVertexAlbedoColors.push(r / 255, g / 255, b / 255);
+                  this.gpuVertexNormalColors.push(
+                     rNormal / 255,
+                     gNormal / 255,
+                     bNormal / 255
+                  );
                }
             }
          }
-         this.objString = objString;
+
+         if (POINT_CLOUD_TO_MESH) {
+            throw new Error("POINT_CLOUD_TO_MESH: Method not implemented.");
+
+            for (var x = 0; x < this.width; x++) {
+               for (var y = 0; y < this.height; y++) {
+                  const i = (x + y * this.width) * 2;
+
+                  if (this.meshFaces[i] !== undefined) {
+                     objFacesString +=
+                        "f " + this.meshFaces[i].join(" ") + "\n";
+                     /*objFacesString +=
+                        "f " + this.meshFaces[i + 1].join(" ") + "\n";*/
+                  }
+               }
+            }
+         }
+
+         this.objString = objString + objFacesString;
       }
       return this.objString;
    }
@@ -155,15 +191,26 @@ class PointCloud {
       uiBaseLayer--;
       uiLog("Calculating anisotropic integrals.");
 
-      this.zValues = Array(this.dimensions[0] * this.dimensions[1]).fill(0);
+      this.zValues = Array(this.width * this.height).fill(0);
 
-      if (SHOW_ERROR_COLORS) {
-         this.errorValues = Array(this.dimensions[0] * this.dimensions[1]).fill(
-            0
-         );
-         var xZValues = Array(this.dimensions[0] * this.dimensions[1]).fill(0);
-         var yZValues = Array(this.dimensions[0] * this.dimensions[1]).fill(0);
-      }
+      var measureDenominator: number = 7;
+
+      var leftZValues = Array(Math.round(this.width / measureDenominator)).fill(
+         0
+      );
+      var rightZValues = Array(
+         Math.round(this.width / measureDenominator)
+      ).fill(0);
+      var topZValues = Array(Math.round(this.width / measureDenominator)).fill(
+         0
+      );
+      var bottomZValues = Array(
+         Math.round(this.width / measureDenominator)
+      ).fill(0);
+
+      this.errorValues = Array(this.width * this.height).fill(0);
+      var xZValues = Array(this.width * this.height).fill(0);
+      var yZValues = Array(this.width * this.height).fill(0);
 
       const Z_FACTOR = -this.depthFactor / 4;
       const GRADIENT_SHIFT = -(255 / 2);
@@ -171,11 +218,11 @@ class PointCloud {
       var zLineOffset: number;
       var zLineOffsetI: number;
 
-      for (var y = 0; y < this.dimensions[1]; y++) {
+      for (var y = 0; y < this.height; y++) {
          zLineOffset = 0;
          zLineOffsetI = 0;
-         for (var x = 0; x < this.dimensions[0]; x++) {
-            const index = x + y * this.dimensions[0];
+         for (var x = 0; x < this.width; x++) {
+            const index = x + y * this.width;
             const baseColorIndex = index * 4;
             const colorIndex = baseColorIndex + GLSL_CHANNEL.RED;
             const maskIndex = baseColorIndex + GLSL_CHANNEL.BLUE;
@@ -198,31 +245,32 @@ class PointCloud {
                const gradient = gradientPixelArray[colorIndex] + GRADIENT_SHIFT;
                zLineOffset += gradient * Z_FACTOR;
 
-               if (SHOW_ERROR_COLORS) {
-                  if (xZValues[index] !== 0) {
-                     const currentError: number = Math.abs(
-                        xZValues[index] - zLineOffset
-                     );
-                     const combinedCurrentError =
-                        currentError + this.errorValues[index];
-                     this.errorValues[index] = combinedCurrentError;
-                     this.maxError = Math.max(
-                        this.maxError,
-                        combinedCurrentError
-                     );
-                  } else {
-                     xZValues[index] = zLineOffset;
-                  }
+               if (xZValues[index] !== 0) {
+                  const currentError: number = Math.abs(
+                     xZValues[index] - zLineOffset
+                  );
+                  const combinedCurrentError =
+                     currentError + this.errorValues[index];
+                  this.errorValues[index] = combinedCurrentError;
+                  this.maxError = Math.max(this.maxError, combinedCurrentError);
+               } else {
+                  xZValues[index] = zLineOffset;
                }
 
+               if (
+                  y === Math.round(this.height / 2) &&
+                  x / measureDenominator === Math.round(x / measureDenominator)
+               ) {
+                  leftZValues[x / measureDenominator] = zLineOffset;
+               }
                this.zValues[index] += zLineOffset;
             } else {
                this.zValues[index] = null;
                zLineOffset = 0;
             }
 
-            const xi = this.dimensions[0] - x - 1;
-            const indexI = xi + y * this.dimensions[0];
+            const xi = this.width - x - 1;
+            const indexI = xi + y * this.width;
             const baseColorIndexI = indexI * 4;
 
             if (this.zValues[indexI] !== null) {
@@ -231,23 +279,25 @@ class PointCloud {
                   gradientPixelArray[colorIndexI] + GRADIENT_SHIFT;
                zLineOffsetI += gradientI * -Z_FACTOR;
 
-               if (SHOW_ERROR_COLORS) {
-                  if (xZValues[indexI] !== 0) {
-                     const currentError: number = Math.abs(
-                        xZValues[indexI] - zLineOffsetI
-                     );
-                     const combinedCurrentError =
-                        currentError + this.errorValues[indexI];
-                     this.errorValues[indexI] = combinedCurrentError;
-                     this.maxError = Math.max(
-                        this.maxError,
-                        combinedCurrentError
-                     );
-                  } else {
-                     xZValues[indexI] = zLineOffsetI;
-                  }
+               if (xZValues[indexI] !== 0) {
+                  const currentError: number = Math.abs(
+                     xZValues[indexI] - zLineOffsetI
+                  );
+                  const combinedCurrentError =
+                     currentError + this.errorValues[indexI];
+                  this.errorValues[indexI] = combinedCurrentError;
+                  this.maxError = Math.max(this.maxError, combinedCurrentError);
+               } else {
+                  xZValues[indexI] = zLineOffsetI;
                }
 
+               if (
+                  y === Math.round(this.height / 2) &&
+                  xi / measureDenominator ===
+                     Math.round(xi / measureDenominator)
+               ) {
+                  rightZValues[xi / measureDenominator] = zLineOffset;
+               }
                this.zValues[indexI] += zLineOffsetI;
             } else {
                this.zValues[indexI] = null;
@@ -257,11 +307,11 @@ class PointCloud {
       }
       xZValues = undefined;
 
-      for (var x = 0; x < this.dimensions[0]; x++) {
+      for (var x = 0; x < this.width; x++) {
          zLineOffset = 0;
          zLineOffsetI = 0;
-         for (var y = 0; y < this.dimensions[1]; y++) {
-            const index = x + y * this.dimensions[0];
+         for (var y = 0; y < this.height; y++) {
+            const index = x + y * this.width;
 
             const baseColorIndex = index * 4;
             const colorIndex = baseColorIndex + GLSL_CHANNEL.GREEN;
@@ -285,31 +335,32 @@ class PointCloud {
                const gradient = gradientPixelArray[colorIndex] + GRADIENT_SHIFT;
                zLineOffset += gradient * Z_FACTOR;
 
-               if (SHOW_ERROR_COLORS) {
-                  if (yZValues[index] !== 0) {
-                     const currentError: number = Math.abs(
-                        yZValues[index] - zLineOffset
-                     );
-                     const combinedCurrentError =
-                        currentError + this.errorValues[index];
-                     this.errorValues[index] = combinedCurrentError;
-                     this.maxError = Math.max(
-                        this.maxError,
-                        combinedCurrentError
-                     );
-                  } else {
-                     yZValues[index] = zLineOffset;
-                  }
+               if (yZValues[index] !== 0) {
+                  const currentError: number = Math.abs(
+                     yZValues[index] - zLineOffset
+                  );
+                  const combinedCurrentError =
+                     currentError + this.errorValues[index];
+                  this.errorValues[index] = combinedCurrentError;
+                  this.maxError = Math.max(this.maxError, combinedCurrentError);
+               } else {
+                  yZValues[index] = zLineOffset;
                }
 
+               if (
+                  y === Math.round(this.height / 2) &&
+                  x / measureDenominator === Math.round(x / measureDenominator)
+               ) {
+                  topZValues[x / measureDenominator] = zLineOffset;
+               }
                this.zValues[index] += zLineOffset;
             } else {
                this.zValues[index] = null;
                zLineOffset = 0;
             }
 
-            const yi = this.dimensions[1] - y - 1;
-            const indexI = x + yi * this.dimensions[0];
+            const yi = this.height - y - 1;
+            const indexI = x + yi * this.width;
             const baseColorIndexI = indexI * 4;
 
             if (this.zValues[indexI] !== null) {
@@ -318,26 +369,54 @@ class PointCloud {
                   gradientPixelArray[colorIndexI] + GRADIENT_SHIFT;
                zLineOffsetI += gradientI * -Z_FACTOR;
 
-               if (SHOW_ERROR_COLORS) {
-                  if (yZValues[indexI] !== 0) {
-                     const currentError: number = Math.abs(
-                        yZValues[indexI] - zLineOffsetI
-                     );
-                     const combinedCurrentError =
-                        currentError + this.errorValues[indexI];
-                     this.errorValues[indexI] = combinedCurrentError;
-                     this.maxError = Math.max(
-                        this.maxError,
-                        combinedCurrentError
-                     );
-                  } else {
-                     yZValues[indexI] = zLineOffsetI;
-                  }
+               if (yZValues[indexI] !== 0) {
+                  const currentError: number = Math.abs(
+                     yZValues[indexI] - zLineOffsetI
+                  );
+                  const combinedCurrentError =
+                     currentError + this.errorValues[indexI];
+                  this.errorValues[indexI] = combinedCurrentError;
+                  this.maxError = Math.max(this.maxError, combinedCurrentError);
+               } else {
+                  yZValues[indexI] = zLineOffsetI;
+               }
+
+               if (
+                  yi === Math.round(this.height / 2) &&
+                  x / measureDenominator === Math.round(x / measureDenominator)
+               ) {
+                  bottomZValues[x / measureDenominator] = zLineOffsetI;
                }
                this.zValues[indexI] += zLineOffsetI;
             } else {
                this.zValues[indexI] = null;
                zLineOffsetI = 0;
+            }
+         }
+      }
+
+      if (POINT_CLOUD_TO_MESH) {
+         for (var x = 1; x < 10; x++) {
+            for (var y = 1; y < 10; y++) {
+               const i: number = x + y * this.width;
+
+               const thisVertex: number = i;
+               const rightVertex: number = i + 1;
+               const bottomVertex: number = i + this.width;
+               const topRightVertex: number = i - this.width + 1;
+
+               const firstFace: [number, number, number] = [
+                  thisVertex,
+                  rightVertex,
+                  bottomVertex,
+               ];
+               const secondFace: [number, number, number] = [
+                  thisVertex,
+                  topRightVertex,
+                  rightVertex,
+               ];
+
+               this.meshFaces.push(firstFace, secondFace);
             }
          }
       }
@@ -368,27 +447,33 @@ class PointCloud {
       if (
          pixel[0] < 0 ||
          pixel[1] < 0 ||
-         pixel[0] > this.dimensions[0] - 1 ||
-         pixel[1] > this.dimensions[1] - 1
+         pixel[0] > this.width - 1 ||
+         pixel[1] > this.height - 1
       ) {
          return false;
       }
       return true;
    }
 
-   renderPreviewTo(previewDiv: HTMLElement) {
-      var pointCloudRenderer: PointCloudRenderer = new PointCloudRenderer(
-         this.gpuVertices,
-         this.gpuVertexColors,
-         previewDiv
-      );
+   public getGpuVertices(): number[] {
+      return this.gpuVertices;
+   }
+
+   public getGpuVertexAlbedoColors(): number[] {
+      return this.gpuVertexAlbedoColors;
+   }
+
+   public getGpuVertexNormalColors(): number[] {
+      return this.gpuVertexNormalColors;
+   }
+
+   public getGpuVertexErrorColors(): number[] {
+      return this.gpuVertexErrorColors;
    }
 }
 
 class PointCloudRenderer {
-   private gpuVertices: number[];
-   private gpuVertexColors: number[];
-
+   private pointCloud: PointCloud;
    private vertexCount: number;
 
    private rotationSpeed: number = 0.001;
@@ -401,56 +486,73 @@ class PointCloudRenderer {
    private gl: WebGL2RenderingContext;
    private canvas: HTMLCanvasElement;
    private rotationUniform: WebGLUniformLocation;
+   private vertexColorBuffer: WebGLBuffer;
 
-   constructor(
-      gpuVertices: number[],
-      gpuVertexColors: number[],
-      div: HTMLElement
-   ) {
-      this.gpuVertices = gpuVertices;
-      this.gpuVertexColors = gpuVertexColors;
-      this.div = div;
-      this.vertexCount = gpuVertices.length / 3;
+   constructor(pointCloud: PointCloud, previewDiv: HTMLElement) {
+      this.pointCloud = pointCloud;
+      this.div = previewDiv;
+      this.vertexCount = this.pointCloud.getGpuVertices().length / 3;
       this.initializeContext();
+   }
+
+   public updateVertexColor(newColor: VERTEX_COLOR): void {
+      var colors: number[];
+
+      switch (newColor) {
+         case VERTEX_COLOR.ALBEDO: {
+            colors = this.pointCloud.getGpuVertexAlbedoColors();
+            console.log("updating vertex color to albedo...");
+            break;
+         }
+         case VERTEX_COLOR.NORMAL_MAPPING: {
+            colors = this.pointCloud.getGpuVertexNormalColors();
+            console.log("updating vertex color to normal mapping...");
+            break;
+         }
+         case VERTEX_COLOR.ERROR_PRONENESS: {
+            colors = this.pointCloud.getGpuVertexErrorColors();
+            console.log("updating vertex color to error proneness...");
+            break;
+         }
+      }
+
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexColorBuffer);
+      this.gl.bufferData(
+         this.gl.ARRAY_BUFFER,
+         new Float32Array(colors),
+         this.gl.STATIC_DRAW
+      );
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
    }
 
    private initializeContext(): void {
       this.canvas = document.createElement("canvas");
-      this.canvas.style.position = "absolute";
-      this.canvas.style.top = "50%";
-      this.canvas.style.left = "50%";
-      this.canvas.style.transform = "translate(-50%, -50%)";
       this.canvas.style.transition = "all 1s";
-      //this.canvas.style.height = "100%";
-      //this.canvas.style.width = "100%";
       this.div.appendChild(this.canvas);
-      /*================Creating a canvas=================*/
       this.gl = this.canvas.getContext("webgl2");
 
-      /*==========Defining and storing the geometry=======*/
+      document.body.addEventListener(
+         "resize",
+         this.refreshViewportSize.bind(this)
+      );
 
-      var vertices = this.gpuVertices;
-      var colors = this.gpuVertexColors;
-      var vertexCount = vertices.length / 3;
+      var vertices = this.pointCloud.getGpuVertices();
+      var colors = this.pointCloud.getGpuVertexAlbedoColors();
 
-      // Create an empty buffer object to store the vertex buffer
       var vertex_buffer = this.gl.createBuffer();
 
-      //Bind appropriate array buffer to it
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertex_buffer);
 
-      // Pass the vertex data to the buffer
       this.gl.bufferData(
          this.gl.ARRAY_BUFFER,
          new Float32Array(vertices),
          this.gl.STATIC_DRAW
       );
 
-      // Unbind the buffer
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
 
-      var color_buffer = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, color_buffer);
+      this.vertexColorBuffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexColorBuffer);
       this.gl.bufferData(
          this.gl.ARRAY_BUFFER,
          new Float32Array(colors),
@@ -458,15 +560,12 @@ class PointCloudRenderer {
       );
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
 
-      /*=========================Shaders========================*/
-
       var xRot = -90;
       if (IS_WEBCAM) {
          xRot = -45;
       }
       xRot *= Math.PI / 180;
 
-      // vertex shader source code
       var vertCode = [
          "#version 300 es",
          "",
@@ -498,21 +597,16 @@ class PointCloudRenderer {
          " xRot[1] = vec3(0.0, cosRotX, -sinRotX);",
          " xRot[2] = vec3(0.0, sinRotX, cosRotX);",
          " vec3 pos = coordinates * xRot * yRot;",
-         " gl_Position = vec4(pos.x, pos.y + 0.5, pos.z, 1.0);",
+         " gl_Position = vec4(pos.x *2.0, (pos.y + 0.5) *2.0, pos.z *2.0, 1.0);",
          " gl_PointSize = 1.0;",
          "}",
       ].join("\n");
 
-      // Create a vertex shader object
       var vertShader = this.gl.createShader(this.gl.VERTEX_SHADER);
 
-      // Attach vertex shader source code
       this.gl.shaderSource(vertShader, vertCode);
-
-      // Compile the vertex shader
       this.gl.compileShader(vertShader);
 
-      // fragment shader source code
       var fragCode = [
          "#version 300 es",
          "precision " + GPU_GL_FLOAT_PRECISION.MEDIUM + " float;",
@@ -525,46 +619,22 @@ class PointCloudRenderer {
          "}",
       ].join("\n");
 
-      // Create fragment shader object
       var fragShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-
-      // Attach fragment shader source code
       this.gl.shaderSource(fragShader, fragCode);
-
-      // Compile the fragment shader
       this.gl.compileShader(fragShader);
 
-      // Create a shader program object to store
-      // the combined shader program
       var shaderProgram = this.gl.createProgram();
-
-      // Attach a vertex shader
       this.gl.attachShader(shaderProgram, vertShader);
-
-      // Attach a fragment shader
       this.gl.attachShader(shaderProgram, fragShader);
-
-      // Link both programs
       this.gl.linkProgram(shaderProgram);
-
-      // Use the combined shader program object
       this.gl.useProgram(shaderProgram);
-
-      /*======== Associating shaders to buffer objects ========*/
-
-      // Bind vertex buffer object
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertex_buffer);
 
-      // Get the attribute location
       var coordinates = this.gl.getAttribLocation(shaderProgram, "coordinates");
-
-      // Point an attribute to the currently bound VBO
       this.gl.vertexAttribPointer(coordinates, 3, this.gl.FLOAT, false, 0, 0);
-
-      // Enable the attribute
       this.gl.enableVertexAttribArray(coordinates);
 
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, color_buffer);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexColorBuffer);
       var color = this.gl.getAttribLocation(shaderProgram, "v_color");
       this.gl.vertexAttribPointer(color, 3, this.gl.FLOAT, false, 0, 0);
       this.gl.enableVertexAttribArray(color);
@@ -581,12 +651,12 @@ class PointCloudRenderer {
    }
 
    private refreshViewportSize(): void {
-      if (this.div.clientWidth > this.div.clientHeight) {
-         this.canvas.width = this.div.clientHeight * 2;
-         this.canvas.height = this.div.clientHeight * 2;
+      if (this.canvas.width > this.canvas.height) {
+         this.canvas.width = this.div.clientHeight;
+         this.canvas.height = this.div.clientHeight;
       } else {
-         this.canvas.width = this.div.clientWidth * 2;
-         this.canvas.height = this.div.clientWidth * 2;
+         this.canvas.width = this.div.clientWidth;
+         this.canvas.height = this.div.clientWidth;
       }
 
       this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);

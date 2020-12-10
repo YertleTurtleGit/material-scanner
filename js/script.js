@@ -33,21 +33,27 @@ function calculatePointCloud(normalMap) {
         depthFactor = WEBCAM_DEPTH_FACTOR;
         samplingRate = WEBCAM_POINT_CLOUD_SAMPLING_RATE_PERCENT;
     }
-    const pointCloud = new PointCloud(normalMap, [WIDTH, HEIGHT], depthFactor, getColorPixelArray(), samplingRate);
-    pointCloud.getAsObjString();
+    const pointCloud = new PointCloud(normalMap, WIDTH, HEIGHT, depthFactor, samplingRate);
+    pointCloud.getAsObjString(getColorPixelArray());
     NORMAL_MAP_BUTTON.addEventListener("click", downloadNormalMap.bind(null, normalMap));
     POINT_CLOUD_BUTTON.addEventListener("click", downloadPointCloud.bind(null, pointCloud));
     LOADING_AREA.style.display = "none";
     OUTPUT_AREA.style.display = "grid";
-    getColorPixelArray();
-    pointCloud.renderPreviewTo(POINT_CLOUD_AREA);
+    const pointCloudRenderer = new PointCloudRenderer(pointCloud, POINT_CLOUD_CANVAS_AREA);
+    VERTEX_COLOR_SELECT.addEventListener("change", vertexColorSelectChanged.bind(null, pointCloudRenderer));
     console.log("Finished.");
+}
+function vertexColorSelectChanged(pointCloudRenderer) {
+    var vertexColorSelect = VERTEX_COLOR_SELECT;
+    var vertexColorSelectValue = vertexColorSelect.value;
+    var vertexColor = vertexColorSelectValue;
+    pointCloudRenderer.updateVertexColor(vertexColor);
 }
 function downloadNormalMap(normalMap) {
     normalMap.downloadAsImage(dataset.getObjectName() + "_" + NORMAL_MAP_FILE_SUFFIX);
 }
 function downloadPointCloud(pointCloud) {
-    pointCloud.downloadObj(dataset.getObjectName() + "_" + POINT_CLOUD_FILE_SUFFIX);
+    pointCloud.downloadObj(dataset.getObjectName() + "_" + POINT_CLOUD_FILE_SUFFIX, getColorPixelArray());
 }
 var colorPixelArray = null;
 function getColorPixelArray() {

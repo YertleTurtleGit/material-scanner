@@ -48,8 +48,6 @@ to fit the relation to x- and y-coordinates.
 const DEPTH_FACTOR = 0.01;
 const WEBCAM_DEPTH_FACTOR = 0.025;
 
-const SHOW_ERROR_COLORS = false;
-
 /*
 The point cloud sampling rate describes the amount of data used.
 When set to 100, the point cloud vertex count equates to the image pixel count.
@@ -57,12 +55,11 @@ When set to 100, the point cloud vertex count equates to the image pixel count.
 const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
 const WEBCAM_POINT_CLOUD_SAMPLING_RATE_PERCENT = 50;
 
+const POINT_CLOUD_TO_MESH = false;
+
 const MASK_PERCENT = 0;
 const WEBCAM_MASK_PERCENT = 10;
 
-/*
-The resolution used when capturing data with a webcam.
-*/
 const WEBCAM_RESOLUTION = [800, 600];
 
 const WEBCAM_POLAR_ANGLE = 45;
@@ -213,6 +210,12 @@ const enum GLSL_CHANNEL {
    C3 = 3,
 }
 
+const enum VERTEX_COLOR {
+   ALBEDO = "albedo",
+   NORMAL_MAPPING = "normal_mapping",
+   ERROR_PRONENESS = "error-proneness",
+}
+
 /*
 DOM element definitions.
 */
@@ -223,7 +226,11 @@ const OUTPUT_AREA = document.getElementById("output-area");
 const NORMAL_MAP_AREA = document.getElementById("normal-map");
 const NORMAL_MAP_BUTTON = document.getElementById("normal-map-button");
 const POINT_CLOUD_AREA = document.getElementById("point-cloud");
+const POINT_CLOUD_CANVAS_AREA = document.getElementById(
+   "point-cloud-canvas-area"
+);
 const POINT_CLOUD_BUTTON = document.getElementById("point-cloud-button");
+const VERTEX_COLOR_SELECT = document.getElementById("vertex-color-select");
 
 const CAPTURE_BUTTON = document.getElementById("capture-button");
 const TEST_BUTTON = document.getElementById("test_dataset-button");

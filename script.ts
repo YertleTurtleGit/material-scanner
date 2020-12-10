@@ -39,14 +39,16 @@ function calculatePointCloud(normalMap: NormalMap) {
       depthFactor = WEBCAM_DEPTH_FACTOR;
       samplingRate = WEBCAM_POINT_CLOUD_SAMPLING_RATE_PERCENT;
    }
+
    const pointCloud = new PointCloud(
       normalMap,
-      [WIDTH, HEIGHT],
+      WIDTH,
+      HEIGHT,
       depthFactor,
-      getColorPixelArray(),
       samplingRate
    );
-   pointCloud.getAsObjString();
+
+   pointCloud.getAsObjString(getColorPixelArray());
    NORMAL_MAP_BUTTON.addEventListener(
       "click",
       downloadNormalMap.bind(null, normalMap)
@@ -57,9 +59,25 @@ function calculatePointCloud(normalMap: NormalMap) {
    );
    LOADING_AREA.style.display = "none";
    OUTPUT_AREA.style.display = "grid";
-   getColorPixelArray();
-   pointCloud.renderPreviewTo(POINT_CLOUD_AREA);
+
+   const pointCloudRenderer = new PointCloudRenderer(
+      pointCloud,
+      POINT_CLOUD_CANVAS_AREA
+   );
+
+   VERTEX_COLOR_SELECT.addEventListener(
+      "change",
+      vertexColorSelectChanged.bind(null, pointCloudRenderer)
+   );
+
    console.log("Finished.");
+}
+
+function vertexColorSelectChanged(pointCloudRenderer: PointCloudRenderer) {
+   var vertexColorSelect = <HTMLSelectElement>VERTEX_COLOR_SELECT;
+   var vertexColorSelectValue = vertexColorSelect.value;
+   var vertexColor: VERTEX_COLOR = vertexColorSelectValue as VERTEX_COLOR;
+   pointCloudRenderer.updateVertexColor(vertexColor);
 }
 
 function downloadNormalMap(normalMap: NormalMap) {
@@ -70,7 +88,8 @@ function downloadNormalMap(normalMap: NormalMap) {
 
 function downloadPointCloud(pointCloud: PointCloud) {
    pointCloud.downloadObj(
-      dataset.getObjectName() + "_" + POINT_CLOUD_FILE_SUFFIX
+      dataset.getObjectName() + "_" + POINT_CLOUD_FILE_SUFFIX,
+      getColorPixelArray()
    );
 }
 
