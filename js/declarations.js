@@ -46,8 +46,7 @@ const WEBCAM_DEPTH_FACTOR = 0.025;
 The point cloud sampling rate describes the amount of data used.
 When set to 100, the point cloud vertex count equates to the image pixel count.
 */
-const POINT_CLOUD_SAMPLING_RATE_PERCENT = 10;
-const WEBCAM_POINT_CLOUD_SAMPLING_RATE_PERCENT = 50;
+const POINT_CLOUD_MAX_VERTEX_RESOLUTION = 250000;
 const POINT_CLOUD_TO_MESH = false;
 const MASK_PERCENT = 0;
 const WEBCAM_MASK_PERCENT = 10;

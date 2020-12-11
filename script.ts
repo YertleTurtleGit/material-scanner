@@ -34,10 +34,8 @@ function calculatePointCloud(normalMap: NormalMap) {
    uiLog("Calculating point cloud.");
    uiBaseLayer++;
    var depthFactor = DEPTH_FACTOR;
-   var samplingRate = POINT_CLOUD_SAMPLING_RATE_PERCENT;
    if (IS_WEBCAM) {
       depthFactor = WEBCAM_DEPTH_FACTOR;
-      samplingRate = WEBCAM_POINT_CLOUD_SAMPLING_RATE_PERCENT;
    }
 
    const pointCloud = new PointCloud(
@@ -45,7 +43,7 @@ function calculatePointCloud(normalMap: NormalMap) {
       WIDTH,
       HEIGHT,
       depthFactor,
-      samplingRate
+      POINT_CLOUD_MAX_VERTEX_RESOLUTION
    );
 
    pointCloud.getAsObjString(getColorPixelArray());

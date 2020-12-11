@@ -13,7 +13,7 @@ class PointCloud {
    private errorValues: number[];
    private maxError: number = 0;
 
-   private samplingRate: number;
+   private maxVertexCount: number;
 
    private gpuVertices: number[];
    private gpuVertexAlbedoColors: number[];
@@ -25,7 +25,7 @@ class PointCloud {
       width: number,
       height: number,
       depthFactor: number,
-      samplingRate: number
+      maxVertexCount: number
    ) {
       this.normalMap = normalMap;
       this.depthFactor = depthFactor;
@@ -33,7 +33,7 @@ class PointCloud {
       this.height = height;
       this.zValues = null;
       this.objString = null;
-      this.samplingRate = samplingRate;
+      this.maxVertexCount = maxVertexCount;
    }
 
    downloadObj(filename: string, vertexColorArray: Uint8Array) {
@@ -66,14 +66,39 @@ class PointCloud {
 
          uiBaseLayer--;
          uiLog("Writing point cloud file string.");
-         uiBaseLayer--;
          var objString = "";
          var objFacesString = "";
-         const SAMPLING_RATE_STEP = Math.round(100 / this.samplingRate);
+
+         var samplingRate: number = 100;
+         while (
+            this.width * this.height * samplingRate * 0.01 >
+            this.maxVertexCount
+         ) {
+            samplingRate -= 1;
+         }
+
+         if (samplingRate !== 100) {
+            samplingRate++;
+            uiLog(
+               "Reduced point cloud resolution to " +
+                  String(samplingRate) +
+                  " percent. (" /* +
+                  String(
+                     Math.round(this.width * this.height * samplingRate * 0.01)
+                  ) +
+                  " vertices.)"*/
+            );
+         }
+         uiBaseLayer--;
+
+         const SAMPLING_RATE_STEP = 100 / samplingRate;
+         //console.log(SAMPLING_RATE_STEP);
 
          for (var x = 0; x < this.width; x += SAMPLING_RATE_STEP) {
             for (var y = 0; y < this.height; y += SAMPLING_RATE_STEP) {
-               const index = x + y * this.width;
+               const rx = Math.round(x);
+               const ry = Math.round(y);
+               const index = rx + ry * this.width;
                if (!(this.getZValues()[index] == null)) {
                   const colorIndex = index * 4;
                   const z = this.getZValues()[index];
@@ -102,9 +127,9 @@ class PointCloud {
 
                   objString +=
                      "v " +
-                     x +
+                     rx +
                      " " +
-                     y +
+                     ry +
                      " " +
                      z +
                      " " +
@@ -116,8 +141,8 @@ class PointCloud {
                      "\n";
 
                   this.gpuVertices.push(
-                     x / this.width - 0.5,
-                     y / this.width - 0.5,
+                     rx / this.width - 0.5,
+                     ry / this.width - 0.5,
                      z / this.width - 0.5
                   );
 
@@ -130,6 +155,8 @@ class PointCloud {
                }
             }
          }
+
+         //console.log(this.gpuVertices.length / 3);
 
          if (POINT_CLOUD_TO_MESH) {
             throw new Error("POINT_CLOUD_TO_MESH: Method not implemented.");
@@ -475,6 +502,7 @@ class PointCloud {
 class PointCloudRenderer {
    private pointCloud: PointCloud;
    private vertexCount: number;
+   private vertexSize: number = 2;
 
    private rotationSpeed: number = 0.001;
    private rotation: number = 0;
@@ -500,18 +528,18 @@ class PointCloudRenderer {
 
       switch (newColor) {
          case VERTEX_COLOR.ALBEDO: {
+            uiLog("Updating vertex color to albedo.");
             colors = this.pointCloud.getGpuVertexAlbedoColors();
-            console.log("updating vertex color to albedo...");
             break;
          }
          case VERTEX_COLOR.NORMAL_MAPPING: {
+            uiLog("Updating vertex color to normal mapping.");
             colors = this.pointCloud.getGpuVertexNormalColors();
-            console.log("updating vertex color to normal mapping...");
             break;
          }
          case VERTEX_COLOR.ERROR_PRONENESS: {
+            uiLog("Updating vertex color to error proneness.");
             colors = this.pointCloud.getGpuVertexErrorColors();
-            console.log("updating vertex color to error proneness...");
             break;
          }
       }
@@ -598,7 +626,9 @@ class PointCloudRenderer {
          " xRot[2] = vec3(0.0, sinRotX, cosRotX);",
          " vec3 pos = coordinates * xRot * yRot;",
          " gl_Position = vec4(pos.x *2.0, (pos.y + 0.5) *2.0, pos.z *2.0, 1.0);",
-         " gl_PointSize = 1.0;",
+         " gl_PointSize = " +
+            GlslFloat.getJsNumberAsString(this.vertexSize) +
+            ";",
          "}",
       ].join("\n");
 

@@ -23,21 +23,18 @@ The following test-dataset is used:
     <img src="./doc_images/normal-map.gif" width="49%">
     <img src="./doc_images/normal-map_cropped.gif" width="49%">
     </br>
-    <p style="float: left; width: 50%; font-style: italic">Point cloud with mapped normals of all image data.</p>
-    <p style="float: left; width: 50%; font-style: italic">Point cloud with mapped normals of cropped image data.</p>
+    <p>Point cloud with mapped normals as vertex color.</p>
 </div>
 
 ## Error-Proneness Mapping
 
 An error-proneness calculated on the basis of the difference
 between opposite _Riemann sums_ is color-coded relatively
-per point cloud. Green symbolizes low and red symbolizes
-high error-proneness.
+per point cloud.
 
 <div align="center">
     <img src="./doc_images/error-proneness.gif" width="49%">
     <img src="./doc_images/error-proneness_cropped.gif" width="49%">
     </br>
-    <p style="float: left; width: 50%; font-style: italic">Point cloud with mapped error-proneness of all image data.</p>
-    <p style="float: left; width: 50%; font-style: italic">Point cloud with mapped error-proneness of cropped image data.</p>
+    <p>Point cloud with mapped error-proneness as vertex color. Green symbolizes low and red symbolizes high error-proneness.</p>
 </div>
