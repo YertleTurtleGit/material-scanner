@@ -19,7 +19,15 @@ class Dataset {
         return this.lightingCoordinates;
     }
     getImageDimensions() {
-        return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
+        if (this.isOnlyNormalMap()) {
+            return [
+                this.normalMapImageObject.width,
+                this.normalMapImageObject.height,
+            ];
+        }
+        else {
+            return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
+        }
     }
     getType() {
         return this.type;
@@ -34,7 +42,9 @@ class Dataset {
         eventObject.preventDefault();
         this.type = "drop" /* DROP */;
         this.dataInput = new DataInput(this);
-        this.dataInput.setInputClass(new DropInput(this.dataInput, eventObject.dataTransfer.files, this.dataLoaded.bind(this), this));
+        const dropInput = new DropInput(this.dataInput, eventObject.dataTransfer.files, this.dataLoaded.bind(this), this);
+        this.dataInput.setInputClass(dropInput);
+        this.onlyNormalMap = dropInput.isOnlyNormalMap();
         dropArea.style.display = "none";
         this.showLoadingArea();
     }
@@ -58,6 +68,20 @@ class Dataset {
         this.getLightingCoordinates(WEBCAM_POLAR_ANGLE);
         this.dataInput = new DataInput(this);
         this.dataInput.setInputClass(new WebcamInput(this.dataInput, webcamResolution, this.lightingCoordinates, this.dataLoaded.bind(this)));
+    }
+    isOnlyNormalMap() {
+        return this.onlyNormalMap;
+    }
+    getNormalMapImage() {
+        if (this.onlyNormalMap) {
+            return this.normalMapImageObject;
+        }
+        else {
+            throw new Error("Dataset: Normal mapping was not found in input.");
+        }
+    }
+    setNormalMapImage(normalMapImageObject) {
+        this.normalMapImageObject = normalMapImageObject;
     }
     setImage(lightingCoordinate, jsImageObject) {
         for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
@@ -171,29 +195,52 @@ class DropInput {
         this.imagesLoaded = 0;
         this.loadAllImages();
     }
+    isOnlyNormalMap() {
+        return this.droppedFiles.length === 1;
+    }
     getObjectName() {
         return this.objectName;
     }
     loadAllImages() {
         console.log("Loading " + this.droppedFiles.length + " images for cpu.");
-        const fileNameGlobal = this.droppedFiles[0].name.split(".")[0];
-        const polarAngleGlobal = Number(fileNameGlobal.split("_", 3)[2]);
-        this.objectName = fileNameGlobal.split("_", 1)[0];
-        this.lightingCoordinates = this.dataset.getLightingCoordinates(polarAngleGlobal);
-        for (var i = 0; i < this.droppedFiles.length; i++) {
-            const fileName = this.droppedFiles[i].name.split(".")[0];
-            const azimuthalAngle = Number(fileName.split("_", 2)[1]);
-            const polarAngle = Number(fileName.split("_", 3)[2]);
-            const imageDegree = new SphericalCoordinate(azimuthalAngle, polarAngle);
-            const fileType = this.droppedFiles[i].type;
-            if (LIGHTING_AZIMUTHAL_ANGLES.includes(azimuthalAngle) &&
-                fileType.startsWith("image")) {
-                var reader = new FileReader();
-                reader.addEventListener("load", this.readerLoaded.bind(this, reader, imageDegree));
-                reader.readAsDataURL(this.droppedFiles[i]);
+        if (this.isOnlyNormalMap()) {
+            if (!this.droppedFiles[0].type.startsWith("image")) {
+                throw new Error("File is not of type image.");
             }
-            else {
-                this.imagesLoaded++;
+            const callback = this.droppedDataLoadedCallback;
+            const thisDataset = this.dataset;
+            const reader = new FileReader();
+            reader.addEventListener("load", function () {
+                var image = new Image();
+                image.addEventListener("load", function () {
+                    setTimeout(callback, 0);
+                });
+                const readerResult = reader.result;
+                image.src = String(readerResult);
+                thisDataset.setNormalMapImage(image);
+            });
+            reader.readAsDataURL(this.droppedFiles[0]);
+        }
+        else {
+            const fileNameGlobal = this.droppedFiles[0].name.split(".")[0];
+            const polarAngleGlobal = Number(fileNameGlobal.split("_", 3)[2]);
+            this.objectName = fileNameGlobal.split("_", 1)[0];
+            this.lightingCoordinates = this.dataset.getLightingCoordinates(polarAngleGlobal);
+            for (var i = 0; i < this.droppedFiles.length; i++) {
+                const fileName = this.droppedFiles[i].name.split(".")[0];
+                const azimuthalAngle = Number(fileName.split("_", 2)[1]);
+                const polarAngle = Number(fileName.split("_", 3)[2]);
+                const imageDegree = new SphericalCoordinate(azimuthalAngle, polarAngle);
+                const fileType = this.droppedFiles[i].type;
+                if (LIGHTING_AZIMUTHAL_ANGLES.includes(azimuthalAngle) &&
+                    fileType.startsWith("image")) {
+                    var reader = new FileReader();
+                    reader.addEventListener("load", this.readerLoaded.bind(this, reader, imageDegree));
+                    reader.readAsDataURL(this.droppedFiles[i]);
+                }
+                else {
+                    this.imagesLoaded++;
+                }
             }
         }
     }

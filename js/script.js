@@ -2,7 +2,10 @@
 document.getElementById("image-names").innerHTML =
     "{object name}_{azimuthal angle}_{polar_angle}.ext" +
         "<br />" +
-        "e.g. testObject_000_000.png";
+        "e.g. testObject_000_000.png" +
+        "<br />" +
+        "<br />" +
+        "A single dropped image is handled as normal mapping.";
 const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, allImagesLoaded);
 dataset.listenForDrop(INPUT_DROP_AREA);
 dataset.listenForTestButtonClick(TEST_BUTTON);
@@ -19,8 +22,16 @@ function startCalculation() {
     calculateNormalMap();
 }
 function calculateNormalMap() {
-    const normalMap = new NormalMap(dataset);
-    normalMap.calculate(calculatePointCloud.bind(null, normalMap));
+    if (dataset.isOnlyNormalMap()) {
+        document.getElementById("vertex-color-albedo").remove();
+        const normalMap = NormalMap.getFromJsImageObject(dataset.getNormalMapImage());
+        colorPixelArray = normalMap.getAsPixelArray();
+        calculatePointCloud(normalMap);
+    }
+    else {
+        const normalMap = new NormalMap(dataset);
+        normalMap.calculate(calculatePointCloud.bind(null, normalMap));
+    }
 }
 function calculatePointCloud(normalMap) {
     NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());

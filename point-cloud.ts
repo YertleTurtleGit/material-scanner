@@ -82,17 +82,17 @@ class PointCloud {
             uiLog(
                "Reduced point cloud resolution to " +
                   String(samplingRate) +
-                  " percent. (" /* +
+                  " percent. (" +
                   String(
                      Math.round(this.width * this.height * samplingRate * 0.01)
                   ) +
-                  " vertices.)"*/
+                  " vertices.)"
             );
          }
          uiBaseLayer--;
 
          const SAMPLING_RATE_STEP = 100 / samplingRate;
-         //console.log(SAMPLING_RATE_STEP);
+         console.log(SAMPLING_RATE_STEP);
 
          for (var x = 0; x < this.width; x += SAMPLING_RATE_STEP) {
             for (var y = 0; y < this.height; y += SAMPLING_RATE_STEP) {
@@ -156,7 +156,7 @@ class PointCloud {
             }
          }
 
-         //console.log(this.gpuVertices.length / 3);
+         console.log(this.gpuVertices.length / 3);
 
          if (POINT_CLOUD_TO_MESH) {
             throw new Error("POINT_CLOUD_TO_MESH: Method not implemented.");
@@ -528,18 +528,18 @@ class PointCloudRenderer {
 
       switch (newColor) {
          case VERTEX_COLOR.ALBEDO: {
-            uiLog("Updating vertex color to albedo.");
             colors = this.pointCloud.getGpuVertexAlbedoColors();
+            console.log("updating vertex color to albedo...");
             break;
          }
          case VERTEX_COLOR.NORMAL_MAPPING: {
-            uiLog("Updating vertex color to normal mapping.");
             colors = this.pointCloud.getGpuVertexNormalColors();
+            console.log("updating vertex color to normal mapping...");
             break;
          }
          case VERTEX_COLOR.ERROR_PRONENESS: {
-            uiLog("Updating vertex color to error proneness.");
             colors = this.pointCloud.getGpuVertexErrorColors();
+            console.log("updating vertex color to error proneness...");
             break;
          }
       }

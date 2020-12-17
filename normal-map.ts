@@ -6,6 +6,26 @@ class NormalMap {
    private pixelArray: Uint8Array;
    private dataUrl: string;
 
+   public static getFromJsImageObject(
+      jsImageObject: HTMLImageElement
+   ): NormalMap {
+      const normalMap: NormalMap = new NormalMap(null);
+      normalMap.jsImageObject = jsImageObject;
+
+      const shader: Shader = new Shader();
+      shader.bind();
+
+      const render: GlslRendering = GlslRendering.render(
+         GlslImage.load(jsImageObject)
+      );
+
+      normalMap.pixelArray = render.getPixelArray();
+      normalMap.dataUrl = render.getDataUrl();
+      shader.purge();
+
+      return normalMap;
+   }
+
    constructor(dataset: Dataset) {
       this.dataset = dataset;
       this.jsImageObject = null;

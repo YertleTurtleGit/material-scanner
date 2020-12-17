@@ -6,6 +6,17 @@ class NormalMap {
         this.pixelArray = null;
         this.dataUrl = null;
     }
+    static getFromJsImageObject(jsImageObject) {
+        const normalMap = new NormalMap(null);
+        normalMap.jsImageObject = jsImageObject;
+        const shader = new Shader();
+        shader.bind();
+        const render = GlslRendering.render(GlslImage.load(jsImageObject));
+        normalMap.pixelArray = render.getPixelArray();
+        normalMap.dataUrl = render.getDataUrl();
+        shader.purge();
+        return normalMap;
+    }
     downloadAsImage(fileName) {
         fileName += ".png";
         var element = document.createElement("a");

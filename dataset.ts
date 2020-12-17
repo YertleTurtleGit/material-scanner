@@ -12,8 +12,10 @@ class Dataset {
    private dataLoadedCallback: TimerHandler;
    private jsImageObjects: HTMLImageElement[];
    private noLightImageObject: HTMLImageElement;
+   private normalMapImageObject: HTMLImageElement;
    private dataInput: DataInput;
    private type: DATATYPE;
+   private onlyNormalMap: boolean;
 
    constructor(
       lightingAzimuthalAngles: number[],
@@ -46,7 +48,14 @@ class Dataset {
    }
 
    public getImageDimensions(): [number, number] {
-      return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
+      if (this.isOnlyNormalMap()) {
+         return [
+            this.normalMapImageObject.width,
+            this.normalMapImageObject.height,
+         ];
+      } else {
+         return [this.jsImageObjects[0].width, this.jsImageObjects[0].height];
+      }
    }
 
    public getType() {
@@ -74,14 +83,15 @@ class Dataset {
       this.type = DATATYPE.DROP;
       this.dataInput = new DataInput(this);
 
-      this.dataInput.setInputClass(
-         new DropInput(
-            this.dataInput,
-            eventObject.dataTransfer.files,
-            this.dataLoaded.bind(this),
-            this
-         )
+      const dropInput: DropInput = new DropInput(
+         this.dataInput,
+         eventObject.dataTransfer.files,
+         this.dataLoaded.bind(this),
+         this
       );
+
+      this.dataInput.setInputClass(dropInput);
+      this.onlyNormalMap = dropInput.isOnlyNormalMap();
 
       dropArea.style.display = "none";
       this.showLoadingArea();
@@ -129,6 +139,22 @@ class Dataset {
             this.dataLoaded.bind(this)
          )
       );
+   }
+
+   public isOnlyNormalMap(): boolean {
+      return this.onlyNormalMap;
+   }
+
+   public getNormalMapImage(): HTMLImageElement {
+      if (this.onlyNormalMap) {
+         return this.normalMapImageObject;
+      } else {
+         throw new Error("Dataset: Normal mapping was not found in input.");
+      }
+   }
+
+   public setNormalMapImage(normalMapImageObject: HTMLImageElement) {
+      this.normalMapImageObject = normalMapImageObject;
    }
 
    public setImage(
@@ -310,6 +336,10 @@ class DropInput {
       this.loadAllImages();
    }
 
+   public isOnlyNormalMap(): boolean {
+      return this.droppedFiles.length === 1;
+   }
+
    public getObjectName(): string {
       return this.objectName;
    }
@@ -317,39 +347,61 @@ class DropInput {
    private loadAllImages() {
       console.log("Loading " + this.droppedFiles.length + " images for cpu.");
 
-      const fileNameGlobal: string = this.droppedFiles[0].name.split(".")[0];
-      const polarAngleGlobal: number = Number(fileNameGlobal.split("_", 3)[2]);
-      this.objectName = fileNameGlobal.split("_", 1)[0];
+      if (this.isOnlyNormalMap()) {
+         if (!this.droppedFiles[0].type.startsWith("image")) {
+            throw new Error("File is not of type image.");
+         }
+         const callback: TimerHandler = this.droppedDataLoadedCallback;
+         const thisDataset: Dataset = this.dataset;
+         const reader = new FileReader();
+         reader.addEventListener("load", function () {
+            var image = new Image();
+            image.addEventListener("load", function () {
+               setTimeout(callback, 0);
+            });
 
-      this.lightingCoordinates = this.dataset.getLightingCoordinates(
-         polarAngleGlobal
-      );
+            const readerResult = reader.result;
+            image.src = String(readerResult);
+            thisDataset.setNormalMapImage(image);
+         });
+         reader.readAsDataURL(this.droppedFiles[0]);
+      } else {
+         const fileNameGlobal: string = this.droppedFiles[0].name.split(".")[0];
+         const polarAngleGlobal: number = Number(
+            fileNameGlobal.split("_", 3)[2]
+         );
+         this.objectName = fileNameGlobal.split("_", 1)[0];
 
-      for (var i = 0; i < this.droppedFiles.length; i++) {
-         const fileName: string = this.droppedFiles[i].name.split(".")[0];
-
-         const azimuthalAngle: number = Number(fileName.split("_", 2)[1]);
-         const polarAngle: number = Number(fileName.split("_", 3)[2]);
-
-         const imageDegree = new SphericalCoordinate(
-            azimuthalAngle,
-            polarAngle
+         this.lightingCoordinates = this.dataset.getLightingCoordinates(
+            polarAngleGlobal
          );
 
-         const fileType = this.droppedFiles[i].type;
+         for (var i = 0; i < this.droppedFiles.length; i++) {
+            const fileName: string = this.droppedFiles[i].name.split(".")[0];
 
-         if (
-            LIGHTING_AZIMUTHAL_ANGLES.includes(azimuthalAngle) &&
-            fileType.startsWith("image")
-         ) {
-            var reader = new FileReader();
-            reader.addEventListener(
-               "load",
-               this.readerLoaded.bind(this, reader, imageDegree)
+            const azimuthalAngle: number = Number(fileName.split("_", 2)[1]);
+            const polarAngle: number = Number(fileName.split("_", 3)[2]);
+
+            const imageDegree = new SphericalCoordinate(
+               azimuthalAngle,
+               polarAngle
             );
-            reader.readAsDataURL(this.droppedFiles[i]);
-         } else {
-            this.imagesLoaded++;
+
+            const fileType = this.droppedFiles[i].type;
+
+            if (
+               LIGHTING_AZIMUTHAL_ANGLES.includes(azimuthalAngle) &&
+               fileType.startsWith("image")
+            ) {
+               var reader = new FileReader();
+               reader.addEventListener(
+                  "load",
+                  this.readerLoaded.bind(this, reader, imageDegree)
+               );
+               reader.readAsDataURL(this.droppedFiles[i]);
+            } else {
+               this.imagesLoaded++;
+            }
          }
       }
    }
