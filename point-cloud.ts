@@ -69,41 +69,31 @@ class PointCloud {
          var objString = "";
          var objFacesString = "";
 
-         var samplingRate: number = 100;
-         while (
-            this.width * this.height * samplingRate * 0.01 >
-            this.maxVertexCount
-         ) {
-            samplingRate -= 1;
-         }
+         var resolution: number = this.width * this.height;
+         var samplingRateStepX: number = 1;
+         var samplingRateStepY: number = 1;
 
-         if (samplingRate !== 100) {
-            samplingRate++;
-            uiLog(
-               "Reduced point cloud resolution to " +
-                  String(samplingRate) +
-                  " percent. (" +
-                  String(
-                     Math.round(this.width * this.height * samplingRate * 0.01)
-                  ) +
-                  " vertices.)"
-            );
-         }
-         uiBaseLayer--;
+         do {
+            samplingRateStepX += 0.01 * (this.width / this.height);
+            samplingRateStepY += 0.01 * (this.height / this.width);
 
-         const SAMPLING_RATE_STEP = 100 / samplingRate;
-         console.log(SAMPLING_RATE_STEP);
+            resolution =
+               (this.width / samplingRateStepX) *
+               (this.height / samplingRateStepY);
+         } while (resolution > POINT_CLOUD_MAX_VERTEX_RESOLUTION);
 
-         for (var x = 0; x < this.width; x += SAMPLING_RATE_STEP) {
-            for (var y = 0; y < this.height; y += SAMPLING_RATE_STEP) {
+         for (var x = 0; x < this.width; x += samplingRateStepX) {
+            for (var y = 0; y < this.height; y += samplingRateStepY) {
                const rx = Math.round(x);
                const ry = Math.round(y);
                const index = rx + ry * this.width;
-               if (!(this.getZValues()[index] == null)) {
+               if (this.getZValues()[index] !== null) {
                   const colorIndex = index * 4;
                   const z = this.getZValues()[index];
 
-                  var r: number, g: number, b: number;
+                  var r: number;
+                  var g: number;
+                  var b: number;
 
                   const currentErrorColor: number =
                      this.errorValues[index] / this.maxError;
@@ -156,7 +146,19 @@ class PointCloud {
             }
          }
 
-         console.log(this.gpuVertices.length / 3);
+         resolution = this.gpuVertices.length / 3;
+
+         uiLog(
+            "Reducing point cloud resolution by circa " +
+               Math.round(
+                  100 - (resolution / (this.width * this.height)) * 100
+               ) +
+               " percent. Currently " +
+               Math.round(resolution) +
+               " vertices."
+         );
+
+         uiBaseLayer--;
 
          if (POINT_CLOUD_TO_MESH) {
             throw new Error("POINT_CLOUD_TO_MESH: Method not implemented.");
