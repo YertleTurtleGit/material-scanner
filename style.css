@@ -75,13 +75,16 @@ button:hover {
    left: 0;
    width: 100%;
    height: 100%;
-   grid-template-areas: "normal-map point-cloud";
+   grid-template-areas:
+      "normal-map    point-cloud"
+      "chart         point-cloud";
    grid-template-columns: 50% 50%;
-   grid-template-rows: 100%;
+   grid-template-rows: 50%;
 }
 
 #normal-map,
-#point-cloud {
+#point-cloud,
+#chart {
    position: relative;
    overflow: hidden;
 }
@@ -90,21 +93,28 @@ button:hover {
    grid-area: normal-map;
 }
 
+#chart {
+   grid-area: chart;
+}
+
 #point-cloud {
    grid-area: point-cloud;
 }
 
 #point-cloud-canvas-area {
+   position: absolute;
+   top: 10%;
+   left: 0;
    width: 100%;
-   height: 100%;
+   height: 90%;
 }
 
-/*#point-cloud-canvas-area canvas {
+#point-cloud-canvas-area canvas {
    position: absolute;
    top: 50%;
    left: 50%;
    transform: translate(-50%, -50%);
-}*/
+}
 
 #point-cloud-button,
 #normal-map-button {
@@ -120,6 +130,11 @@ button:hover {
    height: 100%;
    object-position: center;
    object-fit: cover;
+}
+
+#chart canvas {
+   width: 100% !important;
+   height: 100% !important;
 }
 
 #current-task-info {
@@ -149,17 +164,23 @@ button:hover {
 
 @keyframes lds-dual-ring {
    0% {
-      transform: rotate(0deg);
+      transform: rotate(0deg) scale(1);
+      opacity: 1;
+   }
+   50% {
+      transform: rotate(180deg) scale(1.2);
+      opacity: 0.2;
    }
    100% {
-      transform: rotate(360deg);
+      transform: rotate(360deg) scale(1);
+      opacity: 1;
    }
 }
 
 @media (orientation: portrait) {
    #output-area {
-      grid-template-areas: "normal-map" "point-cloud";
+      grid-template-areas: "normal-map" "point-cloud" "chart";
       grid-template-columns: 100%;
-      grid-template-rows: 50% 50%;
+      grid-template-rows: 50% 50% 50%;
    }
 }

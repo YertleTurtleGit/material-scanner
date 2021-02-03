@@ -56,7 +56,7 @@ const POINT_CLOUD_MAX_VERTEX_RESOLUTION = 250000;
 
 const POINT_CLOUD_TO_MESH = false;
 
-const MASK_PERCENT = 0;
+const MASK_PERCENT = 10;
 const WEBCAM_MASK_PERCENT = 10;
 
 const WEBCAM_RESOLUTION = [800, 600];
@@ -67,6 +67,8 @@ const TEST_POLAR_ANGLE = 36;
 const TEST_OBJECT_NAME = "object1";
 const TEST_DATASET_FOLDER = "test_dataset/" + TEST_OBJECT_NAME + "/";
 const TEST_FILE_EXTENSION = "jpg";
+
+const DEGREE_TO_RADIAN_FACTOR: number = Math.PI / 180;
 
 /*
 The float precision used on the gpu. Set to medium when facing errors.
@@ -228,6 +230,7 @@ const POINT_CLOUD_AREA = document.getElementById("point-cloud");
 const POINT_CLOUD_CANVAS_AREA = document.getElementById(
    "point-cloud-canvas-area"
 );
+const CHART_AREA = document.getElementById("chart");
 const POINT_CLOUD_BUTTON = document.getElementById("point-cloud-button");
 const VERTEX_COLOR_SELECT = document.getElementById("vertex-color-select");
 
@@ -239,19 +242,24 @@ const C_LOG = document.getElementById("c-log");
 Width and height are set automatically by the input images.
 All images should have the same resolution.
 */
-var WIDTH: number;
-var HEIGHT: number;
+let WIDTH: number;
+let HEIGHT: number;
 
-var IS_WEBCAM = false;
+/*
+Webcam mode is set to true automatically on demand.
+*/
+let IS_WEBCAM = false;
 
 // TODO: Good logging.
 const LOG_ELEMENT = document.getElementById("current-task-info");
 LOG_ELEMENT.style.display = "none";
 
-var uiBaseLayer: number = 0;
+let uiBaseLayer: number = 0;
 function uiLog(message: string, layer: number = uiBaseLayer) {
-   for (var i = 0; i < layer; i++) {
-      message = "- " + message;
+   let logMessage: string = message;
+   for (let i = 0; i < layer; i++) {
+      logMessage = "- " + logMessage;
    }
-   console.log(message);
+   console.log(logMessage);
+   //LOG_ELEMENT.innerHTML = message;
 }

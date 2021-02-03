@@ -58,26 +58,26 @@ class GradientLighting {
       angleDegree = Math.abs(angleDegree - 360);
       const angle = angleDegree * (Math.PI / 180);
 
-      var dist = Math.sqrt(w * w + h * h) / 2;
-      var diagAngle = Math.asin(h / 2 / dist);
+      let dist = Math.sqrt(w * w + h * h) / 2;
+      let diagAngle = Math.asin(h / 2 / dist);
 
-      var a1 = ((angle % (Math.PI * 2)) + Math.PI * 4) % (Math.PI * 2);
+      let a1 = ((angle % (Math.PI * 2)) + Math.PI * 4) % (Math.PI * 2);
       if (a1 > Math.PI) {
          a1 -= Math.PI;
       }
       if (a1 > Math.PI / 2 && a1 <= Math.PI) {
          a1 = Math.PI / 2 - (a1 - Math.PI / 2);
       }
-      var ang1 = Math.PI / 2 - diagAngle - Math.abs(a1);
-      var ang2 = Math.abs(diagAngle - Math.abs(a1));
+      let ang1 = Math.PI / 2 - diagAngle - Math.abs(a1);
+      let ang2 = Math.abs(diagAngle - Math.abs(a1));
 
-      var dist1 = Math.cos(ang1) * h;
-      var dist2 = Math.cos(ang2) * w;
+      let dist1 = Math.cos(ang1) * h;
+      let dist2 = Math.cos(ang2) * w;
 
-      var scale = Math.max(dist2, dist1) / 2;
+      let scale = Math.max(dist2, dist1) / 2;
 
-      var dx = Math.cos(angle) * scale;
-      var dy = Math.sin(angle) * scale;
+      let dx = Math.cos(angle) * scale;
+      let dy = Math.sin(angle) * scale;
 
       const g = ctx.createLinearGradient(
          w / 2 + dx,
@@ -86,7 +86,7 @@ class GradientLighting {
          h / 2 - dy
       );
 
-      for (var i = 0; i < colors.length; i++) {
+      for (let i = 0; i < colors.length; i++) {
          g.addColorStop(i / (colors.length - 1), colors[i]);
       }
       return g;

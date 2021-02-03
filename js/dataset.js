@@ -12,7 +12,7 @@ class Dataset {
     getLightingCoordinates(polarAngle) {
         if (this.lightingCoordinates === null) {
             this.lightingCoordinates = [];
-            for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+            for (let i = 0; i < this.lightingAzimuthalAngles.length; i++) {
                 this.lightingCoordinates.push(new SphericalCoordinate(this.lightingAzimuthalAngles[i], polarAngle));
             }
         }
@@ -84,7 +84,7 @@ class Dataset {
         this.normalMapImageObject = normalMapImageObject;
     }
     setImage(lightingCoordinate, jsImageObject) {
-        for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+        for (let i = 0; i < this.lightingAzimuthalAngles.length; i++) {
             if (this.lightingAzimuthalAngles[i] ===
                 lightingCoordinate.getAzimuthalAngle()) {
                 this.jsImageObjects[i] = jsImageObject;
@@ -97,7 +97,7 @@ class Dataset {
         console.warn("Not found lighting angle in dataset to set image.");
     }
     getImage(lightingAngle) {
-        for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+        for (let i = 0; i < this.lightingAzimuthalAngles.length; i++) {
             if (this.lightingCoordinates[i].getAzimuthalAngle() === lightingAngle) {
                 return this.jsImageObjects[i];
             }
@@ -109,7 +109,7 @@ class Dataset {
         return null;
     }
     getPolarAngle(lightingAngle) {
-        for (var i = 0; i < this.lightingAzimuthalAngles.length; i++) {
+        for (let i = 0; i < this.lightingAzimuthalAngles.length; i++) {
             if (this.lightingCoordinates[i].getAzimuthalAngle() === lightingAngle) {
                 return this.lightingCoordinates[i].getPolarAngle();
             }
@@ -161,12 +161,12 @@ class TestInput {
         }
     }
     loadAllImages() {
-        var polarString = "" + TEST_POLAR_ANGLE;
+        let polarString = "" + TEST_POLAR_ANGLE;
         while (polarString.length < 3) {
             polarString = "0" + polarString;
         }
-        for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
-            var azimuthalString = "" + LIGHTING_AZIMUTHAL_ANGLES[i];
+        for (let i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+            let azimuthalString = "" + LIGHTING_AZIMUTHAL_ANGLES[i];
             while (azimuthalString.length < 3) {
                 azimuthalString = "0" + azimuthalString;
             }
@@ -177,7 +177,7 @@ class TestInput {
                 polarString +
                 "." +
                 TEST_FILE_EXTENSION;
-            var image = new Image();
+            let image = new Image();
             image.addEventListener("load", this.singleImageLoaded.bind(this, image, new SphericalCoordinate(LIGHTING_AZIMUTHAL_ANGLES[i], TEST_POLAR_ANGLE)));
             image.crossOrigin = "anonymous";
             image.src = TEST_DATASET_FOLDER + fileName;
@@ -211,7 +211,7 @@ class DropInput {
             const thisDataset = this.dataset;
             const reader = new FileReader();
             reader.addEventListener("load", function () {
-                var image = new Image();
+                let image = new Image();
                 image.addEventListener("load", function () {
                     setTimeout(callback, 0);
                 });
@@ -226,7 +226,7 @@ class DropInput {
             const polarAngleGlobal = Number(fileNameGlobal.split("_", 3)[2]);
             this.objectName = fileNameGlobal.split("_", 1)[0];
             this.lightingCoordinates = this.dataset.getLightingCoordinates(polarAngleGlobal);
-            for (var i = 0; i < this.droppedFiles.length; i++) {
+            for (let i = 0; i < this.droppedFiles.length; i++) {
                 const fileName = this.droppedFiles[i].name.split(".")[0];
                 const azimuthalAngle = Number(fileName.split("_", 2)[1]);
                 const polarAngle = Number(fileName.split("_", 3)[2]);
@@ -234,7 +234,7 @@ class DropInput {
                 const fileType = this.droppedFiles[i].type;
                 if (LIGHTING_AZIMUTHAL_ANGLES.includes(azimuthalAngle) &&
                     fileType.startsWith("image")) {
-                    var reader = new FileReader();
+                    let reader = new FileReader();
                     reader.addEventListener("load", this.readerLoaded.bind(this, reader, imageDegree));
                     reader.readAsDataURL(this.droppedFiles[i]);
                 }
@@ -246,7 +246,7 @@ class DropInput {
     }
     readerLoaded(reader, imageDegree) {
         //reader.removeEventListener("load", this.readerLoaded);
-        var image = new Image();
+        let image = new Image();
         image.addEventListener("load", this.imageLoaded.bind(this, image, imageDegree));
         const readerResult = reader.result;
         image.src = String(readerResult);
@@ -283,7 +283,7 @@ class WebcamInput {
         return "webcam" /* WEBCAM */;
     }
     getNextLightingAngleIndex() {
-        for (var i = 0; i < this.lightingCoordinates.length; i++) {
+        for (let i = 0; i < this.lightingCoordinates.length; i++) {
             if (this.imageDataList[i] == null) {
                 return i;
             }
@@ -291,7 +291,7 @@ class WebcamInput {
         return null;
     }
     setImageData(lightingCoordinate, imageData) {
-        for (var i = 0; i < this.lightingCoordinates.length; i++) {
+        for (let i = 0; i < this.lightingCoordinates.length; i++) {
             if (this.lightingCoordinates[i].getAzimuthalAngle() ===
                 lightingCoordinate.getAzimuthalAngle()) {
                 this.imageDataList[i] = imageData;
@@ -321,7 +321,7 @@ class WebcamInput {
         }
     }
     loadAllImagesFromData() {
-        for (var i = 0; i < this.lightingCoordinates.length; i++) {
+        for (let i = 0; i < this.lightingCoordinates.length; i++) {
             const image = new Image();
             image.addEventListener("load", this.imageLoadedFromData.bind(this, image, this.lightingCoordinates[i]));
             image.src = this.imageDataList[i];
@@ -331,9 +331,9 @@ class WebcamInput {
         image.src = this.noLightImageData;
     }
     capture() {
-        var nextLightingAngleIndex = this.getNextLightingAngleIndex();
+        let nextLightingAngleIndex = this.getNextLightingAngleIndex();
         if (nextLightingAngleIndex !== null) {
-            var lightingAngle = this.lightingCoordinates[nextLightingAngleIndex].getAzimuthalAngle();
+            let lightingAngle = this.lightingCoordinates[nextLightingAngleIndex].getAzimuthalAngle();
             this.gradientLighting.display(lightingAngle, this.singleCapture.bind(this, new SphericalCoordinate(lightingAngle, WEBCAM_POLAR_ANGLE)));
         }
         else if (this.noLightImageData === null) {

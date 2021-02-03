@@ -87,13 +87,13 @@ class GlslShader {
    }
 
    public getFragmentShaderSource(outVariable: GlslVector4): string {
-      var imageDefinitions: string[] = [];
-      for (var i = 0; i < this.glslImages.length; i++) {
+      let imageDefinitions: string[] = [];
+      for (let i = 0; i < this.glslImages.length; i++) {
          imageDefinitions.push(this.glslImages[i].getGlslDefinition());
       }
 
-      /*var bufferDefinitions: string[] = [];
-      for (var i = 0; i < this.glslBuffers.length; i++) {
+      /*let bufferDefinitions: string[] = [];
+      for (let i = 0; i < this.glslBuffers.length; i++) {
          bufferDefinitions.push(this.glslBuffers[i].getGlslDefinition());
       }*/
 
@@ -193,7 +193,7 @@ class GlslShader {
    }
 
    private setUpRenderTexture() {
-      var gl = this.glslContext.getGlContext();
+      let gl = this.glslContext.getGlContext();
       this.frameTexture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, this.frameTexture);
 
@@ -280,10 +280,10 @@ class GlslContext {
    }
 
    private createShaderProgram(outVariable: GlslVector4): WebGLProgram {
-      var vertexShader: WebGLShader = this.glContext.createShader(
+      let vertexShader: WebGLShader = this.glContext.createShader(
          this.glContext.VERTEX_SHADER
       );
-      var fragmentShader: WebGLShader = this.glContext.createShader(
+      let fragmentShader: WebGLShader = this.glContext.createShader(
          this.glContext.FRAGMENT_SHADER
       );
 
@@ -302,7 +302,7 @@ class GlslContext {
       this.glContext.compileShader(vertexShader);
       this.glContext.compileShader(fragmentShader);
 
-      var shaderProgram: WebGLProgram = this.glContext.createProgram();
+      let shaderProgram: WebGLProgram = this.glContext.createProgram();
       this.glContext.attachShader(shaderProgram, vertexShader);
       this.glContext.attachShader(shaderProgram, fragmentShader);
       this.glContext.linkProgram(shaderProgram);
@@ -314,7 +314,7 @@ class GlslContext {
       const glslImages: GlslImage[] = this.glslShader.getGlslImages();
       uiLog("Loading " + glslImages.length + " image(s) for gpu.");
 
-      for (var i = 0; i < glslImages.length; i++) {
+      for (let i = 0; i < glslImages.length; i++) {
          glslImages[i].loadIntoShaderProgram(this.glContext, shaderProgram, i);
       }
    }
@@ -334,10 +334,10 @@ class GlslContext {
       const frameVertices = [-1, 1, 1, 1, -1, -1, -1, -1, 1, 1, 1, -1];
       const frameTextCoords = [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1];
 
-      var vaoFrame = this.glContext.createVertexArray();
+      let vaoFrame = this.glContext.createVertexArray();
       this.glContext.bindVertexArray(vaoFrame);
 
-      var vboFrameV = this.glContext.createBuffer();
+      let vboFrameV = this.glContext.createBuffer();
       this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, vboFrameV);
       this.glContext.bufferData(
          this.glContext.ARRAY_BUFFER,
@@ -355,7 +355,7 @@ class GlslContext {
       this.glContext.enableVertexAttribArray(framePositionLocation);
       this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, null);
 
-      var vboFrameT = this.glContext.createBuffer();
+      let vboFrameT = this.glContext.createBuffer();
       this.glContext.bindBuffer(this.glContext.ARRAY_BUFFER, vboFrameT);
       this.glContext.bufferData(
          this.glContext.ARRAY_BUFFER,
@@ -395,7 +395,7 @@ class GlslContext {
    }
 
    private readToPixelArray(): Uint8Array {
-      var pixelArray: Uint8Array = new Uint8Array(
+      let pixelArray: Uint8Array = new Uint8Array(
          this.glCanvas.width * this.glCanvas.height * 4
       );
 
@@ -586,7 +586,7 @@ class GlslImage {
    private glslVector4: GlslVector4;
 
    public static load(jsImage: HTMLImageElement): GlslVector4 {
-      var glslImage = new GlslImage(jsImage);
+      let glslImage = new GlslImage(jsImage);
       return glslImage.glslVector4;
    }
 
@@ -605,7 +605,7 @@ class GlslImage {
    }
 
    public createTexture(glContext: WebGL2RenderingContext): WebGLTexture {
-      var texture = glContext.createTexture();
+      let texture = glContext.createTexture();
       glContext.bindTexture(glContext.TEXTURE_2D, texture);
 
       glContext.texParameteri(
@@ -670,9 +670,9 @@ abstract class GlslVariable {
    public static getGlslNamesOfGlslVariables(
       glslVariables: GlslVariable[]
    ): string[] {
-      var glslNames: string[] = [];
+      let glslNames: string[] = [];
       if (glslVariables !== null) {
-         for (var i = 0; i < glslVariables.length; i++) {
+         for (let i = 0; i < glslVariables.length; i++) {
             glslNames.push(glslVariables[i].getGlslName());
          }
       }
@@ -848,7 +848,7 @@ class GlslFloat extends GlslVariable {
          return number.toString() + ".0";
       }
       if (number.toString().includes("e-")) {
-         console.warn(number.toString() + " is converted to zero.");
+         //console.warn(number.toString() + " is converted to zero.");
          return "0.0";
       }
       return number.toString();
@@ -932,10 +932,10 @@ class GlslFloat extends GlslVariable {
 
 class GlslVector3 extends GlslVector {
    constructor(vector3: [GlslFloat, GlslFloat, GlslFloat] = undefined) {
-      var customDeclaration: string = "";
+      let customDeclaration: string = "";
       if (vector3 !== undefined) {
-         var vector3GlslNames: string[] = [];
-         for (var i = 0; i < vector3.length; i++) {
+         let vector3GlslNames: string[] = [];
+         for (let i = 0; i < vector3.length; i++) {
             vector3GlslNames.push(vector3[i].getGlslName());
          }
 
@@ -1017,8 +1017,8 @@ class GlslVector4 extends GlslVector {
    ) {
       if (customDeclaration === "") {
          if (vector4 !== undefined && vector4 !== null) {
-            var vector4GlslNames: string[] = [];
-            for (var i = 0; i < vector4.length; i++) {
+            let vector4GlslNames: string[] = [];
+            for (let i = 0; i < vector4.length; i++) {
                vector4GlslNames.push(vector4[i].getGlslName());
             }
 
@@ -1104,15 +1104,15 @@ class GlslMatrix3 extends GlslMatrix {
          [GlslFloat, GlslFloat, GlslFloat]
       ] = undefined
    ) {
-      var customDeclaration: string = "";
+      let customDeclaration: string = "";
       if (matrix3 !== undefined) {
-         var matrix3GlslNames = [
+         let matrix3GlslNames = [
             [null, null, null],
             [null, null, null],
             [null, null, null],
          ];
-         for (var r = 0; r < matrix3.length; r++) {
-            for (var c = 0; c < matrix3[0].length; c++) {
+         for (let r = 0; r < matrix3.length; r++) {
+            for (let c = 0; c < matrix3[0].length; c++) {
                matrix3GlslNames[r][c] = matrix3[r][c].getGlslName();
             }
          }

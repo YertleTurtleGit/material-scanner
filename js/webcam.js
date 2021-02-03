@@ -23,7 +23,7 @@ class Webcam {
         this.videoElem.style.top = 0;
         this.videoElem.style.left = 0;
         document.body.appendChild(this.videoElem);*/
-        var constraints = { video: this.useVideo, audio: this.useAudio };
+        let constraints = { video: this.useVideo, audio: this.useAudio };
         try {
             this.stream = await navigator.mediaDevices.getUserMedia(constraints);
             this.videoElem.srcObject = this.stream;

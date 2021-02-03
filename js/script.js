@@ -17,6 +17,7 @@ function allImagesLoaded() {
     setTimeout(startCalculation, 0);
 }
 function startCalculation() {
+    LOG_ELEMENT.style.display = "block";
     uiLog("Calculating normal map.");
     uiBaseLayer++;
     calculateNormalMap();
@@ -34,28 +35,39 @@ function calculateNormalMap() {
     }
 }
 function calculatePointCloud(normalMap) {
-    NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());
     uiBaseLayer--;
     uiLog("Calculating point cloud.");
     uiBaseLayer++;
-    var depthFactor = DEPTH_FACTOR;
+    let depthFactor = DEPTH_FACTOR;
     if (IS_WEBCAM) {
         depthFactor = WEBCAM_DEPTH_FACTOR;
     }
-    const pointCloud = new PointCloud(normalMap, WIDTH, HEIGHT, depthFactor, POINT_CLOUD_MAX_VERTEX_RESOLUTION);
-    pointCloud.getAsObjString(getColorPixelArray());
+    const angleDistance = 3;
+    const angles = new Array(360 / angleDistance).fill(null);
+    let angleOffset = 0;
+    for (let i = 0; i < angles.length; i++) {
+        angles[i] = angleOffset;
+        angleOffset += angleDistance;
+    }
+    const pointCloud = new PointCloud(normalMap, WIDTH, HEIGHT, depthFactor, POINT_CLOUD_MAX_VERTEX_RESOLUTION, angles, getColorPixelArray());
+    //pointCloud.getAsObjString(getColorPixelArray());
     NORMAL_MAP_BUTTON.addEventListener("click", downloadNormalMap.bind(null, normalMap));
     POINT_CLOUD_BUTTON.addEventListener("click", downloadPointCloud.bind(null, pointCloud));
     LOADING_AREA.style.display = "none";
     OUTPUT_AREA.style.display = "grid";
     const pointCloudRenderer = new PointCloudRenderer(pointCloud, POINT_CLOUD_CANVAS_AREA);
     VERTEX_COLOR_SELECT.addEventListener("change", vertexColorSelectChanged.bind(null, pointCloudRenderer));
+    const pointCloudChart = new PointCloudChart(pointCloud, CHART_AREA);
+    NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());
+    setTimeout(pointCloudRenderer.startRendering.bind(pointCloudRenderer));
+    setTimeout(pointCloudChart.load.bind(pointCloudChart));
     console.log("Finished.");
+    LOG_ELEMENT.style.display = "none";
 }
 function vertexColorSelectChanged(pointCloudRenderer) {
-    var vertexColorSelect = VERTEX_COLOR_SELECT;
-    var vertexColorSelectValue = vertexColorSelect.value;
-    var vertexColor = vertexColorSelectValue;
+    let vertexColorSelect = VERTEX_COLOR_SELECT;
+    let vertexColorSelectValue = vertexColorSelect.value;
+    let vertexColor = vertexColorSelectValue;
     pointCloudRenderer.updateVertexColor(vertexColor);
 }
 function downloadNormalMap(normalMap) {
@@ -64,15 +76,15 @@ function downloadNormalMap(normalMap) {
 function downloadPointCloud(pointCloud) {
     pointCloud.downloadObj(dataset.getObjectName() + "_" + POINT_CLOUD_FILE_SUFFIX, getColorPixelArray());
 }
-var colorPixelArray = null;
+let colorPixelArray = null;
 function getColorPixelArray() {
     if (colorPixelArray === null) {
         uiLog("Calculating albedo.");
         uiBaseLayer++;
-        var albedoShader = new Shader();
+        let albedoShader = new Shader();
         albedoShader.bind();
-        var images = [];
-        for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+        let images = [];
+        for (let i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
             images.push(GlslImage.load(dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i])));
         }
         const maxImage = images[0].maximum(...images);

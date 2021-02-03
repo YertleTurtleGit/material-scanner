@@ -19,7 +19,7 @@ class NormalMap {
     }
     downloadAsImage(fileName) {
         fileName += ".png";
-        var element = document.createElement("a");
+        let element = document.createElement("a");
         element.setAttribute("href", this.getAsDataUrl());
         element.setAttribute("download", fileName);
         element.style.display = "none";
@@ -49,24 +49,24 @@ class NormalMap {
         return null;
     }
     calculate(onloadCallback) {
-        var normalMapShader = new Shader();
+        let normalMapShader = new Shader();
         normalMapShader.bind();
-        var images = [];
-        for (var i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
+        let images = [];
+        for (let i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {
             images.push(GlslImage.load(dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[i])));
         }
         const maxImage = images[0].maximum(...images);
         const minImage = images[0].minimum(...images);
-        var all = maxImage.getLuminanceFloat();
-        //var front =ic.divide(minImage, all);
-        var north = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH)].getLuminanceFloat();
-        var northeast = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH_EAST)].getLuminanceFloat();
-        var east = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(EAST)].getLuminanceFloat();
-        var southeast = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH_EAST)].getLuminanceFloat();
-        var south = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH)].getLuminanceFloat();
-        var southwest = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH_WEST)].getLuminanceFloat();
-        var west = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(WEST)].getLuminanceFloat();
-        var northwest = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH_WEST)].getLuminanceFloat();
+        let all = maxImage.getLuminanceFloat();
+        //let front =ic.divide(minImage, all);
+        let north = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH)].getLuminanceFloat();
+        let northeast = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH_EAST)].getLuminanceFloat();
+        let east = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(EAST)].getLuminanceFloat();
+        let southeast = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH_EAST)].getLuminanceFloat();
+        let south = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH)].getLuminanceFloat();
+        let southwest = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(SOUTH_WEST)].getLuminanceFloat();
+        let west = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(WEST)].getLuminanceFloat();
+        let northwest = images[LIGHTING_AZIMUTHAL_ANGLES.indexOf(NORTH_WEST)].getLuminanceFloat();
         const hasNoLightImage = this.dataset.getImage(null) !== null;
         if (hasNoLightImage) {
             console.log("HAS NO LIGHT IMAGE!");
@@ -113,11 +113,11 @@ class NormalMap {
         uiBaseLayer++;
         uiLog("Calculating anisotropic reflection matrices.");
         uiBaseLayer--;
-        var normalVectors = [];
-        for (var i = 0; i < COMBINATIONS.length; i++) {
+        let normalVectors = [];
+        for (let i = 0; i < COMBINATIONS.length; i++) {
             normalVectors.push(this.getAnisotropicNormalVector(imageLuminances, ...COMBINATIONS[i]));
         }
-        var normalVector = new GlslVector3([
+        let normalVector = new GlslVector3([
             new GlslFloat(0),
             new GlslFloat(0),
             new GlslFloat(0),
@@ -129,7 +129,7 @@ class NormalMap {
            Somewhere and somehow the red and green channels are swapped.
            Thus, there are swapped here again.
         */
-        var result = new GlslVector3([
+        let result = new GlslVector3([
             normalVector.channel(1 /* GREEN */),
             normalVector.channel(0 /* RED */),
             normalVector.channel(2 /* BLUE */),
@@ -179,14 +179,14 @@ class NormalMap {
         ]).inverse();
     }
     getLightDirectionVector(azimuthalAngle) {
-        var polarAngle = this.dataset.getPolarAngle(azimuthalAngle);
-        var glslPolar = new GlslFloat(polarAngle).radians();
-        var glslAzimuthal = new GlslFloat(azimuthalAngle).radians();
-        var sinPolar = glslPolar.sin();
-        var cosPolar = glslPolar.cos();
-        var sinAzimuthal = glslAzimuthal.sin();
-        var cosAzimuthal = glslAzimuthal.cos();
-        var light = new GlslVector3([
+        let polarAngle = this.dataset.getPolarAngle(azimuthalAngle);
+        let glslPolar = new GlslFloat(polarAngle).radians();
+        let glslAzimuthal = new GlslFloat(azimuthalAngle).radians();
+        let sinPolar = glslPolar.sin();
+        let cosPolar = glslPolar.cos();
+        let sinAzimuthal = glslAzimuthal.sin();
+        let cosAzimuthal = glslAzimuthal.cos();
+        let light = new GlslVector3([
             sinPolar.multiplyFloat(cosAzimuthal),
             sinPolar.multiplyFloat(sinAzimuthal),
             cosPolar,
