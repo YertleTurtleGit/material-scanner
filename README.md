@@ -43,11 +43,11 @@ https://yertleturtlegit.github.io/material-scanner/
    setup. Alternatively you can open your preferred web
    browser and open the ['index.html'](index.html) file.
 
-## Test-Dataset
+## Input
 
-The following test-dataset is used:
+### Images
 
-<div align="center">
+<div align="left">
     <img src="./test_dataset/object1/object1_000_036.jpg" width="24%">
     <img src="./test_dataset/object1/object1_045_036.jpg" width="24%">
     <img src="./test_dataset/object1/object1_090_036.jpg" width="24%">
@@ -56,4 +56,18 @@ The following test-dataset is used:
     <img src="./test_dataset/object1/object1_225_036.jpg" width="24%">
     <img src="./test_dataset/object1/object1_270_036.jpg" width="24%">
     <img src="./test_dataset/object1/object1_315_036.jpg" width="24%">
+</div>
+
+## Output
+
+### Normal Mapping
+
+<div align="left">
+    <img src="./doc/normal-mapping.jpg" width="50%">
+</div>
+
+### Point Cloud
+
+<div align="left">
+    <img src="./doc/point-cloud.gif" width="50%">
 </div>
