@@ -1,6 +1,6 @@
 "use strict";
 class PointCloudRenderer {
-    constructor(pointCloud, div) {
+    constructor(pointCloud, div, verticalOrientation) {
         this.vertexSize = 2;
         this.rotationSpeed = 0.001;
         this.rotation = 0;
@@ -8,6 +8,7 @@ class PointCloudRenderer {
         this.then = 0;
         this.pointCloud = pointCloud;
         this.div = div;
+        this.verticalOrientation = verticalOrientation;
         this.vertexCount = this.pointCloud.getGpuVertices().length / 3;
     }
     updateVertexColor(newColor) {
@@ -15,17 +16,14 @@ class PointCloudRenderer {
         switch (newColor) {
             case "albedo" /* ALBEDO */: {
                 colors = this.pointCloud.getGpuVertexAlbedoColors();
-                uiLog("Updating vertex color to albedo.");
                 break;
             }
             case "normal_mapping" /* NORMAL_MAPPING */: {
                 colors = this.pointCloud.getGpuVertexNormalColors();
-                uiLog("Updating vertex color to normal mapping.");
                 break;
             }
             case "error-proneness" /* ERROR_PRONENESS */: {
                 colors = this.pointCloud.getGpuVertexErrorColors();
-                uiLog("Updating vertex color to error proneness.");
                 break;
             }
         }
@@ -49,7 +47,7 @@ class PointCloudRenderer {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(colors), this.gl.STATIC_DRAW);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         let xRot = -90;
-        if (IS_WEBCAM) {
+        if (this.verticalOrientation) {
             xRot = -45;
         }
         xRot *= DEGREE_TO_RADIAN_FACTOR;
@@ -138,7 +136,7 @@ class PointCloudRenderer {
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
     startRendering() {
-        uiLog("Loading rendered point cloud preview.");
+        console.log("Loading rendered point cloud preview.");
         this.initializeContext();
         this.render(0);
     }

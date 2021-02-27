@@ -1,6 +1,9 @@
 "use strict";
-class GradientLighting {
+class ScreenLighting {
+}
+class GradientLighting extends ScreenLighting {
     constructor() {
+        super();
         this.gradientCanvas = document.createElement("canvas");
         this.gradientCanvasContext = this.gradientCanvas.getContext("2d");
         this.gradientCanvas.style.position = "absolute";

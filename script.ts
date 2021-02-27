@@ -8,7 +8,17 @@ document.getElementById("image-names").innerHTML =
    "<br />" +
    "A single dropped image is handled as normal mapping.";
 
-const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, allImagesLoaded);
+const dataset = new Dataset(
+   LIGHTING_AZIMUTHAL_ANGLES,
+   TEST_POLAR_ANGLE,
+   WEBCAM_POLAR_ANGLE,
+   allImagesLoaded,
+   LOADING_AREA,
+   TEST_OBJECT_NAME,
+   TEST_FILE_EXTENSION,
+   INPUT_DROP_AREA,
+   TEST_DATASET_FOLDER
+);
 dataset.listenForDrop(INPUT_DROP_AREA);
 dataset.listenForTestButtonClick(TEST_BUTTON);
 dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
@@ -36,7 +46,10 @@ function calculateNormalMap() {
       colorPixelArray = normalMap.getAsPixelArray();
       calculatePointCloud(normalMap);
    } else {
-      const normalMap = new NormalMap(dataset);
+      const normalMap = new NormalMap(
+         dataset,
+         NORMAL_CALCULATION_METHOD.PHOTOMETRIC_STEREO
+      );
       normalMap.calculate(calculatePointCloud.bind(null, normalMap));
    }
 }
@@ -46,7 +59,7 @@ function calculatePointCloud(normalMap: NormalMap) {
    uiLog("Calculating point cloud.");
    uiBaseLayer++;
    let depthFactor = DEPTH_FACTOR;
-   if (IS_WEBCAM) {
+   if (dataset.getType() === DATATYPE.WEBCAM) {
       depthFactor = WEBCAM_DEPTH_FACTOR;
    }
 
@@ -83,7 +96,8 @@ function calculatePointCloud(normalMap: NormalMap) {
 
    const pointCloudRenderer = new PointCloudRenderer(
       pointCloud,
-      POINT_CLOUD_CANVAS_AREA
+      POINT_CLOUD_CANVAS_AREA,
+      dataset.getType() === DATATYPE.WEBCAM
    );
 
    VERTEX_COLOR_SELECT.addEventListener(
@@ -130,7 +144,7 @@ function getColorPixelArray() {
       uiLog("Calculating albedo.");
       uiBaseLayer++;
 
-      let albedoShader = new Shader();
+      let albedoShader = new Shader(WIDTH, HEIGHT);
       albedoShader.bind();
 
       let images: GlslVector4[] = [];

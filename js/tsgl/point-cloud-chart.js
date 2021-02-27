@@ -106,7 +106,7 @@ class PointCloudChart {
         this.refreshViewportSize();
         window.addEventListener("resize", this.refreshViewportSize.bind(this));
         this.render();
-        uiLog("Graph rendered.");
+        console.log("Graph rendered.");
     }
     render() {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);

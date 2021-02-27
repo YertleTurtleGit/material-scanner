@@ -1,5 +1,7 @@
 "use strict";
 
+const DEGREE_TO_RADIAN_FACTOR: number = Math.PI / 180;
+
 const SLOPE_SHIFT = -(255 / 2);
 
 class PointCloud {
@@ -228,16 +230,17 @@ class PointCloud {
    }
 
    public async calculate() {
-      uiBaseLayer--;
-      uiLog("Integrating normal map.");
-      uiBaseLayer++;
-      uiLog("Applying local gradient factor.");
-      uiBaseLayer++;
+      console.log("Integrating normal map.");
+      console.log("Applying local gradient factor.");
 
-      let pointCloudShader = new Shader();
+      const normalMapImage: HTMLImageElement = this.normalMap.getAsJsImageObject();
+      const width: number = normalMapImage.width;
+      const height: number = normalMapImage.height;
+
+      let pointCloudShader = new Shader(width, height);
       pointCloudShader.bind();
 
-      const glslNormalMap = GlslImage.load(this.normalMap.getAsJsImageObject());
+      const glslNormalMap = GlslImage.load(normalMapImage);
 
       const red = glslNormalMap.channel(GLSL_CHANNEL.RED);
       const green = glslNormalMap.channel(GLSL_CHANNEL.GREEN);
@@ -255,8 +258,7 @@ class PointCloud {
 
       pointCloudShader.purge();
 
-      uiBaseLayer--;
-      uiLog("Calculating anisotropic integrals.");
+      console.log("Calculating anisotropic integrals.");
 
       this.anglesZValues = Array<Array<number>>(this.azimuthalAngles.length);
 
@@ -270,8 +272,7 @@ class PointCloud {
             gradientPixelArray
          );
 
-         uiBaseLayer++;
-         uiLog(
+         console.log(
             "Calculating " +
                pixelLines.length +
                " integrals from azimuthal angle " +
@@ -293,7 +294,6 @@ class PointCloud {
                lineOffset += pixelLines[j][k].slope * -this.depthFactor;
             }
          }
-         uiBaseLayer--;
       }
 
       this.objString = "";
@@ -314,7 +314,7 @@ class PointCloud {
       }
       */
 
-      uiLog("Summarizing data.");
+      console.log("Summarizing data.");
 
       let highestError: number = 0;
       let averageError: number = 0;
@@ -393,7 +393,7 @@ class PointCloud {
          );
       }
 
-      uiLog("Average error of z values: " + averageError);
+      console.log("Average error of z values: " + averageError);
 
       /*uiLog(
          "Reduced point cloud resolution by around " +

@@ -1,13 +1,162 @@
 "use strict";
 
+const enum GPU_GL_FLOAT_PRECISION {
+   MEDIUM = "medium" + "p",
+   HIGH = "high" + "p",
+}
+
+/*
+The float precision used on the gpu. Set to medium when facing errors.
+*/
+const FLOAT_PRECISION = GPU_GL_FLOAT_PRECISION.HIGH;
+
+const LUMINANCE_CHANNEL_QUANTIFIER: [number, number, number] = [
+   1 / 3,
+   1 / 3,
+   1 / 3,
+];
+
+enum SYMBOL {
+   ADD = " + ",
+   SUBTRACT = " - ",
+   MULTIPLY = " * ",
+   DIVIDE = " / ",
+}
+
+enum METHOD {
+   MAXIMUM = "max",
+   MINIMUM = "min",
+   INVERSE = "inverse",
+   NORMALIZE = "normalize",
+   LENGTH = "length",
+   SINE = "sin",
+   COSINE = "cos",
+   RADIANS = "radians",
+}
+
+enum CUSTOM {
+   LUMINANCE = "luminance",
+   CHANNEL = "channel",
+   VEC3_TO_VEC4 = "vec3_to_vec4",
+}
+
+interface GLSL_OPERATOR {
+   readonly NAME: string;
+   readonly TYPE: typeof SYMBOL | typeof METHOD | typeof CUSTOM;
+}
+
+class GLSL_OPERATORS {
+   public static readonly ADD: GLSL_OPERATOR = {
+      NAME: SYMBOL.ADD,
+      TYPE: SYMBOL,
+   };
+   public static readonly SUBTRACT: GLSL_OPERATOR = {
+      NAME: SYMBOL.SUBTRACT,
+      TYPE: SYMBOL,
+   };
+   public static readonly MULTIPLY: GLSL_OPERATOR = {
+      NAME: SYMBOL.MULTIPLY,
+      TYPE: SYMBOL,
+   };
+   public static readonly DIVIDE: GLSL_OPERATOR = {
+      NAME: SYMBOL.DIVIDE,
+      TYPE: SYMBOL,
+   };
+
+   public static readonly MAXIMUM: GLSL_OPERATOR = {
+      NAME: METHOD.MAXIMUM,
+      TYPE: METHOD,
+   };
+   public static readonly MINIMUM: GLSL_OPERATOR = {
+      NAME: METHOD.MINIMUM,
+      TYPE: METHOD,
+   };
+   public static readonly INVERSE: GLSL_OPERATOR = {
+      NAME: METHOD.INVERSE,
+      TYPE: METHOD,
+   };
+   public static readonly NORMALIZE: GLSL_OPERATOR = {
+      NAME: METHOD.NORMALIZE,
+      TYPE: METHOD,
+   };
+   public static readonly LENGTH: GLSL_OPERATOR = {
+      NAME: METHOD.LENGTH,
+      TYPE: METHOD,
+   };
+   public static readonly SINE: GLSL_OPERATOR = {
+      NAME: METHOD.SINE,
+      TYPE: METHOD,
+   };
+   public static readonly COSINE: GLSL_OPERATOR = {
+      NAME: METHOD.COSINE,
+      TYPE: METHOD,
+   };
+   public static readonly RADIANS: GLSL_OPERATOR = {
+      NAME: METHOD.RADIANS,
+      TYPE: METHOD,
+   };
+   public static readonly LUMINANCE: GLSL_OPERATOR = {
+      NAME: CUSTOM.LUMINANCE,
+      TYPE: CUSTOM,
+   };
+
+   public static readonly CHANNEL: GLSL_OPERATOR = {
+      NAME: CUSTOM.CHANNEL,
+      TYPE: CUSTOM,
+   };
+   public static readonly VEC3_TO_VEC4: GLSL_OPERATOR = {
+      NAME: CUSTOM.VEC3_TO_VEC4,
+      TYPE: CUSTOM,
+   };
+
+   private constructor() {}
+}
+
+const enum GLSL_VAR {
+   UV = "uv",
+   TEX = "tex",
+   POS = "pos",
+   OUT = "fragColor",
+}
+
+const enum GLSL_TYPE {
+   FLOAT = "float",
+   VEC3 = "vec3",
+   VEC4 = "vec4",
+   MAT3 = "mat3",
+   INT = "int",
+}
+
+const enum GLSL_CHANNEL {
+   X = 0,
+   Y = 1,
+   Z = 2,
+   W = 3,
+   RED = 0,
+   GREEN = 1,
+   BLUE = 2,
+   ALPHA = 3,
+   C0 = 0,
+   C1 = 1,
+   C2 = 2,
+   C3 = 3,
+}
+
 class Shader {
    private glslShader: GlslShader = null;
+   private width: number;
+   private height: number;
+
+   constructor(width: number, height: number) {
+      this.width = width;
+      this.height = height;
+   }
 
    public bind() {
       if (this.glslShader !== null) {
          console.warn("Shader is already bound!");
       }
-      this.glslShader = new GlslShader();
+      this.glslShader = new GlslShader(this.width, this.height);
    }
 
    public unbind() {
@@ -61,9 +210,9 @@ class GlslShader {
    // private glslBuffers: GlslBuffer[] = [];
    private glslCommands: string[] = [];
 
-   constructor() {
+   constructor(width: number, height: number) {
       GlslShader.currentShader = this;
-      this.glslContext = new GlslContext(WIDTH, HEIGHT);
+      this.glslContext = new GlslContext(width, height);
    }
 
    public getGlslImages(): GlslImage[] {
@@ -298,7 +447,7 @@ class GlslContext {
       this.glContext.shaderSource(vertexShader, vertexShaderSource);
       this.glContext.shaderSource(fragmentShader, fragmentShaderSource);
 
-      uiLog("Compiling shader program.");
+      console.log("Compiling shader program.");
       this.glContext.compileShader(vertexShader);
       this.glContext.compileShader(fragmentShader);
 
@@ -312,7 +461,7 @@ class GlslContext {
 
    private loadGlslImages(shaderProgram: WebGLProgram): void {
       const glslImages: GlslImage[] = this.glslShader.getGlslImages();
-      uiLog("Loading " + glslImages.length + " image(s) for gpu.");
+      console.log("Loading " + glslImages.length + " image(s) for gpu.");
 
       for (let i = 0; i < glslImages.length; i++) {
          glslImages[i].loadIntoShaderProgram(this.glContext, shaderProgram, i);
@@ -423,7 +572,7 @@ class GlslContext {
       this.glContext.useProgram(shaderProgram);
       this.loadGlslImages(shaderProgram);
 
-      uiLog("Rendering on gpu.");
+      console.log("Rendering on gpu.");
 
       const vaoFrame = this.getFrameVAO(shaderProgram);
       this.drawArraysFromVAO(vaoFrame);

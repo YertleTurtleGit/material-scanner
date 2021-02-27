@@ -1,10 +1,16 @@
 "use strict";
 
-class GradientLighting {
+abstract class ScreenLighting {
+   public abstract display(degree: number, callback: TimerHandler): void;
+   public abstract hide(): void;
+}
+
+class GradientLighting extends ScreenLighting {
    private gradientCanvas: HTMLCanvasElement;
    private gradientCanvasContext: CanvasRenderingContext2D;
 
    constructor() {
+      super();
       this.gradientCanvas = document.createElement("canvas");
       this.gradientCanvasContext = this.gradientCanvas.getContext("2d");
       this.gradientCanvas.style.position = "absolute";
@@ -18,7 +24,7 @@ class GradientLighting {
       document.body.appendChild(this.gradientCanvas);
    }
 
-   public display(degree: number, callback: TimerHandler) {
+   public display(degree: number, callback: TimerHandler): void {
       const width = this.gradientCanvas.width;
       const height = this.gradientCanvas.height;
 

@@ -8,20 +8,23 @@ def enum(**enums):
 
 RENDER_ENGINES = enum(BLENDER='blender', MAYA='maya')
 
-
 RENDER_ENGINE = RENDER_ENGINES.BLENDER
 RADIUS = 2  # Measured in meter.
 LIGHT_COUNT = 20  # Light count on one circle of 360 degrees.
 POLAR_RESOLUTION = 20  # Light count for simulating rotation of 180 degrees.
 BRIGHTNESS_FACTOR = 0.5
 LIGHT_ORIGINS = [0, 45, 90, 135, 180, 225, 270, 315]
+ALL_LIGHT_IMAGE = True
 CAMERA_AZIMUTHAL_STEPS = 4
 CAMERA_POLAR_STEPS = CAMERA_AZIMUTHAL_STEPS / 2
 
+OBJECT_NAME = "testobject"
+POLAR_FILE_NAME = "090"
 
 if(RENDER_ENGINE is RENDER_ENGINES.BLENDER):
     import bpy
     import mathutils
+    import os
 if(RENDER_ENGINE is RENDER_ENGINES.MAYA):
     """
     TODO:
@@ -60,14 +63,19 @@ class CircularRotatingArm:
                  brightnessFactor=BRIGHTNESS_FACTOR,
                  lightOrigins=LIGHT_ORIGINS,
                  cameraAzimuthalSteps=CAMERA_AZIMUTHAL_STEPS,
-                 cameraPolarSteps=CAMERA_POLAR_STEPS):
+                 cameraPolarSteps=CAMERA_POLAR_STEPS,
+                 objectName=OBJECT_NAME,
+                 polarFileName=POLAR_FILE_NAME):
         self.__radius = radius
         self.__lightCount = lightCount
         self.__polarResolution = polarResolution
         self.__cameraAzimuthalSteps = cameraAzimuthalSteps + 1
         self.__cameraPolarSteps = cameraPolarSteps + 1
         self.__brightnessFactor = brightnessFactor
+        self.__lightOriginsDegree = lightOrigins
         self.__lightOrigins = self.__convertLightOrigins(lightOrigins)
+        self.__objectName = objectName
+        self.__polarFileName = polarFileName
 
         self.__cameraObject = None
         self.__azimuthalLightPositions = None
@@ -192,9 +200,12 @@ class CircularRotatingArm:
             """
         self.__lightObjects.append(lightObject)
 
+    def __getMaximumBrightness(self):
+        return math.radians(180) * self.__brightnessFactor
+
     def __getLightBrightness(self, lightPosition, lightOrigin):
         deltaAngle = angleBetweenVectors(lightPosition, lightOrigin)
-        return deltaAngle * deltaAngle * deltaAngle * self.__brightnessFactor
+        return deltaAngle * self.__brightnessFactor
 
     def __setLightBrightness(self, lightObject, brightness):
         if(RENDER_ENGINE is RENDER_ENGINES.BLENDER):
@@ -314,18 +325,20 @@ class CircularRotatingArm:
             self,
             cameraPosition,
             lightOriginAzimuthalAngle,
-            frame):
+            frame,
+            allLights=False):
         self.__buildObjects()
 
         self.__setCameraPosition(cameraPosition)
         self.__setCameraKeyframe(self.__getCameraObject(), frame)
 
-        lightOrigin = rotateVectorAroundAxis(
-            self.__getCameraUpVector(),
-            self.__getCameraLookAtVector(),
-            math.radians(90) + lightOriginAzimuthalAngle
-        )
-        lightOrigin = np.asarray(lightOrigin)
+        if(not allLights):
+            lightOrigin = rotateVectorAroundAxis(
+                self.__getCameraUpVector(),
+                self.__getCameraLookAtVector(),
+                math.radians(90) + lightOriginAzimuthalAngle
+            )
+            lightOrigin = np.asarray(lightOrigin)
 
         for lightObject in self.__lightObjects:
             if(RENDER_ENGINE is RENDER_ENGINES.BLENDER):
@@ -337,8 +350,13 @@ class CircularRotatingArm:
                   position of 'lightObject'.
                 """
             lightPosition = np.asarray(lightPosition)
-            lightBrightness = self.__getLightBrightness(lightPosition,
-                                                        lightOrigin)
+
+            if(allLights):
+                lightBrightness = self.__getMaximumBrightness()
+            else:
+                lightBrightness = self.__getLightBrightness(lightPosition,
+                                                            lightOrigin)
+
             self.__setLightBrightness(lightObject, lightBrightness)
             self.__setLightKeyframe(lightObject, frame)
 
@@ -347,6 +365,9 @@ class CircularRotatingArm:
         totalFrameCount = (len(self.__getCameraPositions())
                            * len(self.__lightOrigins))
 
+        if(ALL_LIGHT_IMAGE):
+            totalFrameCount += len(self.__getCameraPositions())
+
         for cameraPosition in self.__getCameraPositions():
             for lightOrigin in self.__lightOrigins:
                 frame += 1
@@ -354,8 +375,41 @@ class CircularRotatingArm:
                       " of " + str(totalFrameCount) + ".")
                 self.__buildKeyframe(cameraPosition, lightOrigin, frame)
 
+            if(ALL_LIGHT_IMAGE):
+                frame += 1
+                self.__buildKeyframe(cameraPosition, None, frame, True)
+
         print("Finished building keyframes.")
+
+    def getFilenameOfFrame(self, frame):
+        azimuthalIndex = 1
+        while(frame % azimuthalIndex is not 0):
+            azimuthalIndex += 1
+        azimuthal = self.__lightOriginsDegree[azimuthalIndex - 1]
+        azimuthalName = str(azimuthal)
+        while(len(azimuthalName) < 3):
+            azimuthalName = "0" + azimuthalName
+
+        cameraIndex = 1
+        while(frame % cameraIndex * azimuthalIndex is not 0):
+            cameraIndex += 1
+        cameraName = str(cameraIndex)
+
+        return (self.__objectName + "_"
+                + cameraName + "_"
+                + azimuthalName
+                + "_" + self.__polarFileName)
 
 
 circularRotatingArm = CircularRotatingArm()
 circularRotatingArm.buildKeyframes()
+
+if(RENDER_ENGINE is RENDER_ENGINES.BLENDER):
+    def onFrameChange(scene):
+        bpy.context.scene.render.filepath = os.path.join(
+            "/home/yertle/Desktop/testrender/",
+            circularRotatingArm.getFilenameOfFrame(scene.frame_current))
+        print(circularRotatingArm.getFilenameOfFrame(scene.frame_current))
+
+    bpy.app.handlers.frame_change_pre.clear()
+    bpy.app.handlers.frame_change_pre.append(onFrameChange)

@@ -6,7 +6,7 @@ document.getElementById("image-names").innerHTML =
         "<br />" +
         "<br />" +
         "A single dropped image is handled as normal mapping.";
-const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, allImagesLoaded);
+const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, TEST_POLAR_ANGLE, WEBCAM_POLAR_ANGLE, allImagesLoaded, LOADING_AREA, TEST_OBJECT_NAME, TEST_FILE_EXTENSION, INPUT_DROP_AREA, TEST_DATASET_FOLDER);
 dataset.listenForDrop(INPUT_DROP_AREA);
 dataset.listenForTestButtonClick(TEST_BUTTON);
 dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
@@ -30,7 +30,7 @@ function calculateNormalMap() {
         calculatePointCloud(normalMap);
     }
     else {
-        const normalMap = new NormalMap(dataset);
+        const normalMap = new NormalMap(dataset, 1 /* PHOTOMETRIC_STEREO */);
         normalMap.calculate(calculatePointCloud.bind(null, normalMap));
     }
 }
@@ -39,7 +39,7 @@ function calculatePointCloud(normalMap) {
     uiLog("Calculating point cloud.");
     uiBaseLayer++;
     let depthFactor = DEPTH_FACTOR;
-    if (IS_WEBCAM) {
+    if (dataset.getType() === "webcam" /* WEBCAM */) {
         depthFactor = WEBCAM_DEPTH_FACTOR;
     }
     const angleDistance = 3;
@@ -55,7 +55,7 @@ function calculatePointCloud(normalMap) {
     POINT_CLOUD_BUTTON.addEventListener("click", downloadPointCloud.bind(null, pointCloud));
     LOADING_AREA.style.display = "none";
     OUTPUT_AREA.style.display = "grid";
-    const pointCloudRenderer = new PointCloudRenderer(pointCloud, POINT_CLOUD_CANVAS_AREA);
+    const pointCloudRenderer = new PointCloudRenderer(pointCloud, POINT_CLOUD_CANVAS_AREA, dataset.getType() === "webcam" /* WEBCAM */);
     VERTEX_COLOR_SELECT.addEventListener("change", vertexColorSelectChanged.bind(null, pointCloudRenderer));
     const pointCloudChart = new PointCloudChart(pointCloud, CHART_AREA);
     NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());
@@ -81,7 +81,7 @@ function getColorPixelArray() {
     if (colorPixelArray === null) {
         uiLog("Calculating albedo.");
         uiBaseLayer++;
-        let albedoShader = new Shader();
+        let albedoShader = new Shader(WIDTH, HEIGHT);
         albedoShader.bind();
         let images = [];
         for (let i = 0; i < LIGHTING_AZIMUTHAL_ANGLES.length; i++) {

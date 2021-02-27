@@ -1,4 +1,5 @@
 "use strict";
+const DEGREE_TO_RADIAN_FACTOR = Math.PI / 180;
 const SLOPE_SHIFT = -(255 / 2);
 class PointCloud {
     constructor(normalMap, width, height, depthFactor, maxVertexCount, azimuthalAngles, vertexAlbedoColors) {
@@ -138,14 +139,14 @@ class PointCloud {
         return this.anglesZValues;
     }
     async calculate() {
-        uiBaseLayer--;
-        uiLog("Integrating normal map.");
-        uiBaseLayer++;
-        uiLog("Applying local gradient factor.");
-        uiBaseLayer++;
-        let pointCloudShader = new Shader();
+        console.log("Integrating normal map.");
+        console.log("Applying local gradient factor.");
+        const normalMapImage = this.normalMap.getAsJsImageObject();
+        const width = normalMapImage.width;
+        const height = normalMapImage.height;
+        let pointCloudShader = new Shader(width, height);
         pointCloudShader.bind();
-        const glslNormalMap = GlslImage.load(this.normalMap.getAsJsImageObject());
+        const glslNormalMap = GlslImage.load(normalMapImage);
         const red = glslNormalMap.channel(0 /* RED */);
         const green = glslNormalMap.channel(1 /* GREEN */);
         const blue = glslNormalMap.channel(2 /* BLUE */);
@@ -156,13 +157,11 @@ class PointCloud {
         ]);
         const gradientPixelArray = GlslRendering.render(result.getVector4()).getPixelArray();
         pointCloudShader.purge();
-        uiBaseLayer--;
-        uiLog("Calculating anisotropic integrals.");
+        console.log("Calculating anisotropic integrals.");
         this.anglesZValues = Array(this.azimuthalAngles.length);
         for (let i = 0; i < this.anglesZValues.length; i++) {
             let pixelLines = this.getPixelLinesFromAzimuthalAngle(this.azimuthalAngles[i], gradientPixelArray);
-            uiBaseLayer++;
-            uiLog("Calculating " +
+            console.log("Calculating " +
                 pixelLines.length +
                 " integrals from azimuthal angle " +
                 this.azimuthalAngles[i] +
@@ -177,7 +176,6 @@ class PointCloud {
                     lineOffset += pixelLines[j][k].slope * -this.depthFactor;
                 }
             }
-            uiBaseLayer--;
         }
         this.objString = "";
         this.gpuVertices = [];
@@ -194,7 +192,7 @@ class PointCloud {
               (this.height / samplingRateStep.y);
         }
         */
-        uiLog("Summarizing data.");
+        console.log("Summarizing data.");
         let highestError = 0;
         let averageError = 0;
         let zErrors = [];
@@ -248,7 +246,7 @@ class PointCloud {
         for (let i = 0; i < zErrors.length; i++) {
             this.gpuVertexErrorColors.push(zErrors[i] / highestError, 1 - zErrors[i] / highestError, 0);
         }
-        uiLog("Average error of z values: " + averageError);
+        console.log("Average error of z values: " + averageError);
         /*uiLog(
            "Reduced point cloud resolution by around " +
               Math.round(100 - (resolution / (this.width * this.height)) * 100) +

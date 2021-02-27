@@ -1,13 +1,111 @@
 "use strict";
+/*
+The float precision used on the gpu. Set to medium when facing errors.
+*/
+const FLOAT_PRECISION = "highp" /* HIGH */;
+const LUMINANCE_CHANNEL_QUANTIFIER = [
+    1 / 3,
+    1 / 3,
+    1 / 3,
+];
+var SYMBOL;
+(function (SYMBOL) {
+    SYMBOL["ADD"] = " + ";
+    SYMBOL["SUBTRACT"] = " - ";
+    SYMBOL["MULTIPLY"] = " * ";
+    SYMBOL["DIVIDE"] = " / ";
+})(SYMBOL || (SYMBOL = {}));
+var METHOD;
+(function (METHOD) {
+    METHOD["MAXIMUM"] = "max";
+    METHOD["MINIMUM"] = "min";
+    METHOD["INVERSE"] = "inverse";
+    METHOD["NORMALIZE"] = "normalize";
+    METHOD["LENGTH"] = "length";
+    METHOD["SINE"] = "sin";
+    METHOD["COSINE"] = "cos";
+    METHOD["RADIANS"] = "radians";
+})(METHOD || (METHOD = {}));
+var CUSTOM;
+(function (CUSTOM) {
+    CUSTOM["LUMINANCE"] = "luminance";
+    CUSTOM["CHANNEL"] = "channel";
+    CUSTOM["VEC3_TO_VEC4"] = "vec3_to_vec4";
+})(CUSTOM || (CUSTOM = {}));
+class GLSL_OPERATORS {
+    constructor() { }
+}
+GLSL_OPERATORS.ADD = {
+    NAME: SYMBOL.ADD,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.SUBTRACT = {
+    NAME: SYMBOL.SUBTRACT,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.MULTIPLY = {
+    NAME: SYMBOL.MULTIPLY,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.DIVIDE = {
+    NAME: SYMBOL.DIVIDE,
+    TYPE: SYMBOL,
+};
+GLSL_OPERATORS.MAXIMUM = {
+    NAME: METHOD.MAXIMUM,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.MINIMUM = {
+    NAME: METHOD.MINIMUM,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.INVERSE = {
+    NAME: METHOD.INVERSE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.NORMALIZE = {
+    NAME: METHOD.NORMALIZE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.LENGTH = {
+    NAME: METHOD.LENGTH,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.SINE = {
+    NAME: METHOD.SINE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.COSINE = {
+    NAME: METHOD.COSINE,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.RADIANS = {
+    NAME: METHOD.RADIANS,
+    TYPE: METHOD,
+};
+GLSL_OPERATORS.LUMINANCE = {
+    NAME: CUSTOM.LUMINANCE,
+    TYPE: CUSTOM,
+};
+GLSL_OPERATORS.CHANNEL = {
+    NAME: CUSTOM.CHANNEL,
+    TYPE: CUSTOM,
+};
+GLSL_OPERATORS.VEC3_TO_VEC4 = {
+    NAME: CUSTOM.VEC3_TO_VEC4,
+    TYPE: CUSTOM,
+};
 class Shader {
-    constructor() {
+    constructor(width, height) {
         this.glslShader = null;
+        this.width = width;
+        this.height = height;
     }
     bind() {
         if (this.glslShader !== null) {
             console.warn("Shader is already bound!");
         }
-        this.glslShader = new GlslShader();
+        this.glslShader = new GlslShader(this.width, this.height);
     }
     unbind() {
         GlslShader.currentShader = null;
@@ -24,13 +122,13 @@ class Shader {
     }
 }
 class GlslShader {
-    constructor() {
+    constructor(width, height) {
         this.floatPrecision = FLOAT_PRECISION;
         this.glslImages = [];
         // private glslBuffers: GlslBuffer[] = [];
         this.glslCommands = [];
         GlslShader.currentShader = this;
-        this.glslContext = new GlslContext(WIDTH, HEIGHT);
+        this.glslContext = new GlslContext(width, height);
     }
     static getCurrentShader() {
         return GlslShader.currentShader;
@@ -252,7 +350,7 @@ class GlslContext {
         //console.log(fragmentShaderSource);
         this.glContext.shaderSource(vertexShader, vertexShaderSource);
         this.glContext.shaderSource(fragmentShader, fragmentShaderSource);
-        uiLog("Compiling shader program.");
+        console.log("Compiling shader program.");
         this.glContext.compileShader(vertexShader);
         this.glContext.compileShader(fragmentShader);
         let shaderProgram = this.glContext.createProgram();
@@ -263,7 +361,7 @@ class GlslContext {
     }
     loadGlslImages(shaderProgram) {
         const glslImages = this.glslShader.getGlslImages();
-        uiLog("Loading " + glslImages.length + " image(s) for gpu.");
+        console.log("Loading " + glslImages.length + " image(s) for gpu.");
         for (let i = 0; i < glslImages.length; i++) {
             glslImages[i].loadIntoShaderProgram(this.glContext, shaderProgram, i);
         }
@@ -316,7 +414,7 @@ class GlslContext {
         const shaderProgram = this.createShaderProgram(outVariable);
         this.glContext.useProgram(shaderProgram);
         this.loadGlslImages(shaderProgram);
-        uiLog("Rendering on gpu.");
+        console.log("Rendering on gpu.");
         const vaoFrame = this.getFrameVAO(shaderProgram);
         this.drawArraysFromVAO(vaoFrame);
     }
