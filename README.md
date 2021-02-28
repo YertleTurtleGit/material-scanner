@@ -2,7 +2,7 @@
 
 ## Live Demo in Web Browser
 
-https://yertleturtlegit.github.io/material-scanner/
+[yertleturtlegit.github.io/material-scanner](https://yertleturtlegit.github.io/material-scanner/)
 
 ## Run on nearly every Local Maschine in Web Browser
 
