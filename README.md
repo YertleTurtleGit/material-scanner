@@ -31,7 +31,7 @@
    ```
 
 2. Open
-   ['spherical-scanner.code-workspace'](spherical-scanner.code-workspace)
+   ['material-scanner.code-workspace'](material-scanner.code-workspace)
    as workspace in Visual Studio Code.
 
 3. Run the configured build on file change task by clicking

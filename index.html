@@ -18,12 +18,12 @@
             </p>
             <h2>or</h2>
             <button id="test_dataset-button">use test dataset</button>
-            <button id="capture-button">use webcam (experimental)</button>
+            <!---<button id="capture-button">use webcam (experimental)</button>--->
          </div>
       </div>
 
       <div id="loading-area">
-         <div id="current-task-info" class="center"></div>
+         <div id="current-task-info" class="center">Initializing.</div>
          <div class="lds-dual-ring center"></div>
       </div>
 
@@ -46,21 +46,8 @@
          </div>
       </div>
 
-      <!--
-      <script src="js/min/declarations.min.js"></script>
-      <script src="js/min/spherical-coordinate.min.js"></script>
-      <script src="js/min/glsl-shader.min.js"></script>
-      <script src="js/min/gradient-lighting.min.js"></script>
-      <script src="js/min/webcam.min.js"></script>
-      <script src="js/min/dataset.min.js"></script>
-      <script src="js/min/point-cloud.min.js"></script>
-      <script src="js/min/point-cloud-renderer.min.js"></script>
-      <script src="js/min/normal-map.min.js"></script>
-      <script src="js/min/point-cloud-chart.min.js"></script>
-      <script src="js/min/script.min.js"></script>
-      -->
-
       <script src="js/declarations.js"></script>
+      <script src="js/tsgl/thread-pool.js"></script>
       <script src="js/tsgl/spherical-coordinate.js"></script>
       <script src="js/tsgl/glsl-shader.js"></script>
       <script src="js/tsgl/screen-lighting.js"></script>

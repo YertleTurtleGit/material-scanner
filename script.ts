@@ -21,43 +21,38 @@ const dataset = new Dataset(
 );
 dataset.listenForDrop(INPUT_DROP_AREA);
 dataset.listenForTestButtonClick(TEST_BUTTON);
-dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
+//dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 
 function allImagesLoaded() {
    INPUT_DROP_AREA.remove();
+   STATUS_ELEMENT.style.display = "inherit";
    WIDTH = dataset.getImageDimensions()[0];
    HEIGHT = dataset.getImageDimensions()[1];
-   setTimeout(startCalculation, 0);
+   startCalculation();
 }
 
-function startCalculation() {
-   LOG_ELEMENT.style.display = "block";
-   uiLog("Calculating normal map.");
-   uiBaseLayer++;
-   calculateNormalMap();
+async function startCalculation() {
+   const normalMap: NormalMap = await calculateNormalMap();
+   calculatePointCloud(normalMap);
 }
 
-function calculateNormalMap() {
+async function calculateNormalMap() {
+   let normalMap: NormalMap;
    if (dataset.isOnlyNormalMap()) {
       document.getElementById("vertex-color-albedo").remove();
-      const normalMap: NormalMap = NormalMap.getFromJsImageObject(
-         dataset.getNormalMapImage()
-      );
+      normalMap = NormalMap.getFromJsImageObject(dataset.getNormalMapImage());
       colorPixelArray = normalMap.getAsPixelArray();
-      calculatePointCloud(normalMap);
    } else {
-      const normalMap = new NormalMap(
+      normalMap = new NormalMap(
          dataset,
          NORMAL_CALCULATION_METHOD.PHOTOMETRIC_STEREO
       );
-      normalMap.calculate(calculatePointCloud.bind(null, normalMap));
+      await normalMap.calculate();
    }
+   return normalMap;
 }
 
-function calculatePointCloud(normalMap: NormalMap) {
-   uiBaseLayer--;
-   uiLog("Calculating point cloud.");
-   uiBaseLayer++;
+async function calculatePointCloud(normalMap: NormalMap) {
    let depthFactor = DEPTH_FACTOR;
    if (dataset.getType() === DATATYPE.WEBCAM) {
       depthFactor = WEBCAM_DEPTH_FACTOR;
@@ -81,6 +76,8 @@ function calculatePointCloud(normalMap: NormalMap) {
       angles,
       getColorPixelArray()
    );
+
+   await pointCloud.calculate(statusCallback);
 
    //pointCloud.getAsObjString(getColorPixelArray());
    NORMAL_MAP_BUTTON.addEventListener(
@@ -113,9 +110,6 @@ function calculatePointCloud(normalMap: NormalMap) {
    NORMAL_MAP_AREA.appendChild(normalMap.getAsJsImageObject());
    setTimeout(pointCloudRenderer.startRendering.bind(pointCloudRenderer));
    setTimeout(pointCloudChart.load.bind(pointCloudChart));
-
-   console.log("Finished.");
-   LOG_ELEMENT.style.display = "none";
 }
 
 function vertexColorSelectChanged(pointCloudRenderer: PointCloudRenderer) {
@@ -127,23 +121,22 @@ function vertexColorSelectChanged(pointCloudRenderer: PointCloudRenderer) {
 
 function downloadNormalMap(normalMap: NormalMap) {
    normalMap.downloadAsImage(
-      dataset.getObjectName() + "_" + NORMAL_MAP_FILE_SUFFIX
+      dataset.getObjectName() + "_" + NORMAL_MAP_FILE_SUFFIX,
+      NORMAL_MAP_BUTTON
    );
 }
 
 function downloadPointCloud(pointCloud: PointCloud) {
    pointCloud.downloadObj(
       dataset.getObjectName() + "_" + POINT_CLOUD_FILE_SUFFIX,
-      getColorPixelArray()
+      getColorPixelArray(),
+      POINT_CLOUD_BUTTON
    );
 }
 
 let colorPixelArray: Uint8Array = null;
 function getColorPixelArray() {
    if (colorPixelArray === null) {
-      uiLog("Calculating albedo.");
-      uiBaseLayer++;
-
       let albedoShader = new Shader(WIDTH, HEIGHT);
       albedoShader.bind();
 

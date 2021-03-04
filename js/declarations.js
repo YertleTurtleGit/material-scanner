@@ -46,15 +46,20 @@ All images should have the same resolution.
 */
 let WIDTH;
 let HEIGHT;
-// TODO: Good logging.
-const LOG_ELEMENT = document.getElementById("current-task-info");
-LOG_ELEMENT.style.display = "none";
-let uiBaseLayer = 0;
-function uiLog(message, layer = uiBaseLayer) {
-    let logMessage = message;
-    for (let i = 0; i < layer; i++) {
-        logMessage = "- " + logMessage;
+const STATUS_ELEMENT = document.getElementById("current-task-info");
+//STATUS_ELEMENT.style.display = "none";
+function statusCallback(description, level, percent = undefined) {
+    if (!percent) {
+        console.log(description);
     }
-    console.log(logMessage);
-    //LOG_ELEMENT.innerHTML = message;
+    if (level <= 2) {
+        if (percent) {
+            //console.log(description + " " + Math.round(percent) + "%");
+            STATUS_ELEMENT.innerHTML =
+                description + "<br />" + Math.round(percent) + "%";
+        }
+        else {
+            STATUS_ELEMENT.innerHTML = description;
+        }
+    }
 }
