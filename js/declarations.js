@@ -10,10 +10,6 @@ to fit the relation to x- and y-coordinates.
 */
 const DEPTH_FACTOR = 0.01;
 const WEBCAM_DEPTH_FACTOR = 0.025;
-/*
-The point cloud sampling rate describes the amount of data used.
-When set to 100, the point cloud vertex count equates to the image pixel count.
-*/
 const POINT_CLOUD_MAX_VERTEX_RESOLUTION = 250000;
 const POINT_CLOUD_TO_MESH = false;
 const MASK_PERCENT = 10;
@@ -47,6 +43,7 @@ All images should have the same resolution.
 let WIDTH;
 let HEIGHT;
 const STATUS_ELEMENT = document.getElementById("current-task-info");
+const STATUS_PROGRESS = (document.getElementById("current-task-info-progress"));
 //STATUS_ELEMENT.style.display = "none";
 function statusCallback(description, level, percent = undefined) {
     if (!percent) {
@@ -55,8 +52,8 @@ function statusCallback(description, level, percent = undefined) {
     if (level <= 2) {
         if (percent) {
             //console.log(description + " " + Math.round(percent) + "%");
-            STATUS_ELEMENT.innerHTML =
-                description + "<br />" + Math.round(percent) + "%";
+            STATUS_ELEMENT.innerHTML = description;
+            STATUS_PROGRESS.value = percent;
         }
         else {
             STATUS_ELEMENT.innerHTML = description;

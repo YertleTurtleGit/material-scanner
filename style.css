@@ -146,37 +146,29 @@ button:hover {
    transform: translate(-50%, 100px);
 }
 
-.lds-dual-ring {
-   display: inline-block;
-   width: 80px;
-   height: 80px;
+progress::-moz-progress-bar {
+   background-color: var(--text-color-darker);
+   background: var(--text-color);
+   border-radius: 100px;
+   appearance: none;
+}
+progress::-webkit-progress-value {
+   background-color: var(--text-color-darker);
+   background: var(--text-color);
+   border-radius: 100px;
+   appearance: none;
 }
 
-.lds-dual-ring:after {
-   content: " ";
-   display: block;
-   width: 64px;
-   height: 64px;
-   margin: 8px;
-   border-radius: 50%;
-   border: 6px solid #fff;
-   border-color: #fff transparent #fff transparent;
-   animation: lds-dual-ring 1.2s linear infinite;
+progress::-moz-progress-bar {
+   border-radius: 100px;
+}
+progress::-webkit-progress-bar {
+   border-radius: 100px;
 }
 
-@keyframes lds-dual-ring {
-   0% {
-      transform: rotate(0deg) scale(1);
-      opacity: 1;
-   }
-   50% {
-      transform: rotate(180deg) scale(1.2);
-      opacity: 0.2;
-   }
-   100% {
-      transform: rotate(360deg) scale(1);
-      opacity: 1;
-   }
+progress {
+   -webkit-appearance: none;
+   appearance: none;
 }
 
 @media (orientation: portrait) {

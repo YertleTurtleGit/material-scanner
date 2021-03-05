@@ -24,7 +24,13 @@
 
       <div id="loading-area">
          <div id="current-task-info" class="center">Initializing.</div>
-         <div class="lds-dual-ring center"></div>
+         <progress
+            class="center"
+            id="current-task-info-progress"
+            min="0"
+            max="100"
+            value="0"
+         ></progress>
       </div>
 
       <div id="output-area">
