@@ -49,7 +49,7 @@ class ThreadPool {
                 this.results.push(this.threads[i].getResult());
             }
             const durationInSeconds = Math.round(performance.now() - this.startTime);
-            //TODO: Display duration.
+            // TODO: Display duration.
             this.updateStatus();
         }
         else {

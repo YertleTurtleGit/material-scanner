@@ -160,7 +160,7 @@ class PointCloud {
     calculateAnisotropicIntegral(azimuthalAngle, gradientPixelArray) {
         const integral = new Array(this.width * this.height);
         let pixelLines = this.getPixelLinesFromAzimuthalAngle(azimuthalAngle, gradientPixelArray);
-        /*statusCallback(
+        /*console.log(
            "Calculating " +
               pixelLines.length +
               " integrals from azimuthal angle " +
@@ -235,8 +235,8 @@ class PointCloud {
         return result;
     }
     async calculate() {
-        const gradientDOMStatus = new DOMStatusElement("Integrating normal map.");
-        const integralDOMStatus = new DOMStatusElement("Calculating integrals.");
+        const gradientDOMStatus = new DOMStatusElement("Calculating slopes.");
+        const integralDOMStatus = new DOMStatusElement("Integrating normal mapping.");
         const summarizeDOMStatus = new DOMStatusElement("Summarizing data.");
         const gradientThreadPool = new ThreadPool(gradientDOMStatus);
         gradientThreadPool.add(this.getLocalGradientFactor.bind(this));
@@ -268,12 +268,12 @@ class PointCloud {
         this.gpuVertexAlbedoColors = new Array(dimensionThreeChannel);
         this.gpuVertexNormalColors = new Array(dimensionThreeChannel);
         const normalMapPixelArray = this.normalMap.getAsPixelArray();
-        const summarizeThreadPool = new ThreadPool(summarizeDOMStatus);
+        const summerizeThreadPool = new ThreadPool(summarizeDOMStatus);
         for (let y = 0; y < this.height; y += samplingRateStep.y) {
             const summerizeMethod = this.summarizeHorizontalImageLine.bind(this, y, samplingRateStep.x, resolution, normalMapPixelArray);
-            summarizeThreadPool.add(summerizeMethod);
+            summerizeThreadPool.add(summerizeMethod);
         }
-        const results = await summarizeThreadPool.run();
+        const results = await summerizeThreadPool.run();
         let highestError = 0;
         let averageError = 0;
         for (let j = 0, length = results.length; j < length; j++) {
@@ -287,7 +287,7 @@ class PointCloud {
                 zErrors.push(zErrorsLine[i]);
             }
         }
-        console.log("Average error of z values: " + averageError);
+        console.log("Average error of z values: " + averageError, 1);
         /*console.log(
            "Reduced point cloud resolution by around " +
               Math.round(100 - (resolution / (this.width * this.height)) * 100) +
