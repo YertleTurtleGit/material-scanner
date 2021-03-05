@@ -147,26 +147,24 @@ button:hover {
 }
 
 progress::-moz-progress-bar {
-   background-color: var(--text-color-darker);
+   background-color: var(--brighter-color);
    background: var(--text-color);
    border-radius: 100px;
    appearance: none;
 }
 progress::-webkit-progress-value {
-   background-color: var(--text-color-darker);
+   background-color: var(--brighter-color);
    background: var(--text-color);
    border-radius: 100px;
    appearance: none;
 }
 
-progress::-moz-progress-bar {
-   border-radius: 100px;
-}
 progress::-webkit-progress-bar {
    border-radius: 100px;
 }
 
 progress {
+   border-radius: 100px;
    -webkit-appearance: none;
    appearance: none;
 }
