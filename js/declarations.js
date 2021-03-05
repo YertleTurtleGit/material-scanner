@@ -24,7 +24,7 @@ const TEST_FILE_EXTENSION = "jpg";
 DOM element definitions.
 */
 const INPUT_DROP_AREA = document.getElementById("input-drop-area");
-const LOADING_AREA = document.getElementById("loading-area");
+const LOADING_AREA = (document.getElementById("loading-area"));
 const OUTPUT_AREA = document.getElementById("output-area");
 const NORMAL_MAP_AREA = document.getElementById("normal-map");
 const NORMAL_MAP_BUTTON = document.getElementById("normal-map-button");
@@ -42,21 +42,3 @@ All images should have the same resolution.
 */
 let WIDTH;
 let HEIGHT;
-const STATUS_ELEMENT = document.getElementById("current-task-info");
-const STATUS_PROGRESS = (document.getElementById("current-task-info-progress"));
-//STATUS_ELEMENT.style.display = "none";
-function statusCallback(description, level, percent = undefined) {
-    if (!percent) {
-        console.log(description);
-    }
-    if (level <= 2) {
-        if (percent) {
-            //console.log(description + " " + Math.round(percent) + "%");
-            STATUS_ELEMENT.innerHTML = description;
-            STATUS_PROGRESS.value = percent;
-        }
-        else {
-            STATUS_ELEMENT.innerHTML = description;
-        }
-    }
-}
