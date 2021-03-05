@@ -148,7 +148,7 @@ button:hover {
 }
 
 progress::-moz-progress-bar {
-   background: var(--accent-color);
+   background-color: var(--accent-color);
    border-radius: 100px;
    appearance: none;
 }
