@@ -85,6 +85,7 @@ class NormalMap {
         return null;
     }
     async calculate() {
+        const normalDOMSTatus = new DOMStatusElement("Calculating normals.");
         const dimensionReferenceImage = this.dataset.getImage(LIGHTING_AZIMUTHAL_ANGLES[0]);
         const width = dimensionReferenceImage.width;
         const height = dimensionReferenceImage.height;
@@ -187,6 +188,7 @@ class NormalMap {
         this.dataUrl = rendering.getDataUrl();
         this.jsImageObject = await rendering.getJsImage();
         normalMapShader.purge();
+        normalDOMSTatus.setFinish();
     }
     getAnisotropicNormalVector(imageLuminances, originAzimuthalAngle, orthogonalAzimuthalAngle, oppositeAzimuthalAngle) {
         const lights = this.getLights(originAzimuthalAngle, orthogonalAzimuthalAngle, oppositeAzimuthalAngle);

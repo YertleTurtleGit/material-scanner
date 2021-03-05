@@ -33,7 +33,9 @@ const TEST_FILE_EXTENSION = "jpg";
 DOM element definitions.
 */
 const INPUT_DROP_AREA = document.getElementById("input-drop-area");
-const LOADING_AREA = document.getElementById("loading-area");
+const LOADING_AREA: HTMLDivElement = <HTMLDivElement>(
+   document.getElementById("loading-area")
+);
 
 const OUTPUT_AREA = document.getElementById("output-area");
 const NORMAL_MAP_AREA = document.getElementById("normal-map");
@@ -57,13 +59,12 @@ All images should have the same resolution.
 let WIDTH: number;
 let HEIGHT: number;
 
-const STATUS_ELEMENT = document.getElementById("current-task-info");
-const STATUS_PROGRESS: HTMLProgressElement = <HTMLProgressElement>(
+/*const STATUS_PROGRESS: HTMLProgressElement = <HTMLProgressElement>(
    document.getElementById("current-task-info-progress")
 );
-//STATUS_ELEMENT.style.display = "none";
+STATUS_ELEMENT.style.display = "none";*/
 
-function statusCallback(
+/*function statusCallback(
    description: string,
    level: number,
    percent: number = undefined
@@ -80,4 +81,4 @@ function statusCallback(
          STATUS_ELEMENT.innerHTML = description;
       }
    }
-}
+}*/

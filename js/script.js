@@ -6,13 +6,14 @@ document.getElementById("image-names").innerHTML =
         "<br />" +
         "<br />" +
         "A single dropped image is handled as normal mapping.";
+DOMStatusElement.setParentDiv(LOADING_AREA);
 const dataset = new Dataset(LIGHTING_AZIMUTHAL_ANGLES, TEST_POLAR_ANGLE, WEBCAM_POLAR_ANGLE, allImagesLoaded, LOADING_AREA, TEST_OBJECT_NAME, TEST_FILE_EXTENSION, INPUT_DROP_AREA, TEST_DATASET_FOLDER);
 dataset.listenForDrop(INPUT_DROP_AREA);
 dataset.listenForTestButtonClick(TEST_BUTTON);
 //dataset.listenForWebcamButtonClick(CAPTURE_BUTTON, WEBCAM_RESOLUTION);
 function allImagesLoaded() {
     INPUT_DROP_AREA.remove();
-    STATUS_ELEMENT.style.display = "inherit";
+    LOADING_AREA.style.display = "inherit";
     WIDTH = dataset.getImageDimensions()[0];
     HEIGHT = dataset.getImageDimensions()[1];
     startCalculation();
@@ -47,7 +48,7 @@ async function calculatePointCloud(normalMap) {
         angleOffset += angleDistance;
     }
     const pointCloud = new PointCloud(normalMap, WIDTH, HEIGHT, depthFactor, POINT_CLOUD_MAX_VERTEX_RESOLUTION, angles, getColorPixelArray());
-    await pointCloud.calculate(statusCallback);
+    await pointCloud.calculate();
     //pointCloud.getAsObjString(getColorPixelArray());
     NORMAL_MAP_BUTTON.addEventListener("click", downloadNormalMap.bind(null, normalMap));
     POINT_CLOUD_BUTTON.addEventListener("click", downloadPointCloud.bind(null, pointCloud));
