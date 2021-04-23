@@ -230,6 +230,12 @@ class PointCloud {
                     green +
                     " " +
                     blue +
+                    " " +
+                    normalRed +
+                    " " +
+                    normalGreen +
+                    " " +
+                    normalBlue +
                     "\n";
         }
         return result;
