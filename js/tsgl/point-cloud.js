@@ -211,9 +211,9 @@ class PointCloud {
             this.gpuVertexAlbedoColors[vectorIndex + 0 /* RED */] = red;
             this.gpuVertexAlbedoColors[vectorIndex + 1 /* GREEN */] = green;
             this.gpuVertexAlbedoColors[vectorIndex + 2 /* BLUE */] = blue;
-            const normalRed = normalMapPixelArray[colorIndex + 0 /* RED */] / 255;
-            const normalGreen = normalMapPixelArray[colorIndex + 1 /* GREEN */] / 255;
-            const normalBlue = normalMapPixelArray[colorIndex + 2 /* BLUE */] / 255;
+            let normalRed = normalMapPixelArray[colorIndex + 0 /* RED */] / 255;
+            let normalGreen = normalMapPixelArray[colorIndex + 1 /* GREEN */] / 255;
+            let normalBlue = normalMapPixelArray[colorIndex + 2 /* BLUE */] / 255;
             this.gpuVertexNormalColors[vectorIndex + 0 /* RED */] = normalRed;
             this.gpuVertexNormalColors[vectorIndex + 1 /* GREEN */] = normalGreen;
             this.gpuVertexNormalColors[vectorIndex + 2 /* BLUE */] = normalBlue;
