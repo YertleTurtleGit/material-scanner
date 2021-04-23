@@ -217,6 +217,9 @@ class PointCloud {
             this.gpuVertexNormalColors[vectorIndex + 0 /* RED */] = normalRed;
             this.gpuVertexNormalColors[vectorIndex + 1 /* GREEN */] = normalGreen;
             this.gpuVertexNormalColors[vectorIndex + 2 /* BLUE */] = normalBlue;
+            normalRed = (normalRed - 0.5) * 2;
+            normalGreen = (normalGreen - 0.5) * 2;
+            normalBlue = (normalBlue - 0.5) * 2;
             this.objString +=
                 "v " +
                     x +
